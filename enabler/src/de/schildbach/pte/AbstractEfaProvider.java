@@ -1013,6 +1013,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                 return new Line(id, network, Product.HIGH_SPEED_TRAIN, "ARC" + trainNum);
             if ("HOT".equals(trainType) && trainNum != null) // Spanien, Nacht
                 return new Line(id, network, Product.HIGH_SPEED_TRAIN, "HOT" + trainNum);
+            if ("LCM".equals(trainType) && "Locomore".equals(trainName) && trainNum != null)
+                return new Line(id, network, Product.HIGH_SPEED_TRAIN, "LCM" + trainNum);
             if ("Locomore".equals(longName))
                 return new Line(id, network, Product.HIGH_SPEED_TRAIN, "LOC" + Strings.nullToEmpty(trainNum));
 
@@ -1270,6 +1272,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                 return new Line(id, network, Product.REGIONAL_TRAIN, "DPF" + trainNum);
             if ("WBA".equals(trainType) || "Waldbahn".equals(trainName))
                 return new Line(id, network, Product.REGIONAL_TRAIN, "WBA" + trainNum);
+            if ("ÖB".equals(trainType) && "Öchsle-Bahn-Betriebsgesellschaft mbH".equals(trainName) && trainNum != null)
+                return new Line(id, network, Product.REGIONAL_TRAIN, "ÖB" + trainNum);
             if ("ÖBA".equals(trainType) && trainNum != null) // Eisenbahn-Betriebsgesellschaft Ochsenhausen
                 return new Line(id, network, Product.REGIONAL_TRAIN, "ÖBA" + trainNum);
             if (("UEF".equals(trainType) || "Ulmer Eisenbahnfreunde".equals(trainName)) && trainNum != null)
@@ -1359,6 +1363,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                 return new Line(id, network, null, "N" + trainNum);
             if ("Train".equals(trainName))
                 return new Line(id, network, null, null);
+            if ("PPN".equals(trainType) && "Osobowy".equals(trainName) && trainNum != null)
+                return new Line(id, network, null, "PPN" + trainNum);
 
             // generic
             if (trainName != null && trainType == null && trainNum == null)
@@ -1711,6 +1717,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             XmlPullUtil.optValueTag(pp, "dy", null);
             final String de = XmlPullUtil.optValueTag(pp, "de", null);
             final String productName = n != null ? n : de;
+            XmlPullUtil.optValueTag(pp, "routeDesc", null);
             XmlPullUtil.optValueTag(pp, "tco", null);
             final String lineId = parseMobileDv(pp);
 
