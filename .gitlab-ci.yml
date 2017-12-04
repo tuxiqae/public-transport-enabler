@@ -1,0 +1,21 @@
+stages:
+  - git-robot
+  
+before_script:
+  # see https://docs.gitlab.com/ee/ci/ssh_keys/README.html#ssh-keys-when-using-the-docker-executor
+  - git config --global user.name "Git Robot"
+  - git config --global user.email "git-robot@opentransitmap.org"
+  - eval $(ssh-agent -s)
+  - ssh-add <(echo "$SSH_PRIVATE_KEY")
+  - mkdir -p ~/.ssh
+  - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+
+git-merge-upstream:
+  stage: git-robot
+  only:
+    - schedules
+    - web
+  allow_failure: false
+  script:
+    - git pull https://github.com/schildbach/public-transport-enabler.git master
+    - git push git@gitlab.com:opentransitmap/public-transport-enabler.git master
