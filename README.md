@@ -15,7 +15,6 @@ You can build all sub-projects at once using Gradle:
 [github.com/schildbach/public-transport-enabler](https://github.com/schildbach/public-transport-enabler) and applies selected pull requests until they are merged into upstream:
 
 * [Incofer, Costa Rica](https://github.com/schildbach/public-transport-enabler/pull/146)
-* [Texas, United States](https://github.com/schildbach/public-transport-enabler/pull/99)
 * [New York, United States](https://github.com/schildbach/public-transport-enabler/pull/97)
 
 
