@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 the original author or authors.
+ * Copyright 2010-2015 the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ public enum NetworkId {
     DUB,
 
     // United States
-    RTACHICAGO, OREGON, TEXAS,
+    RTACHICAGO, OREGON,
 
     // Canada
     ONTARIO, QUEBEC,
