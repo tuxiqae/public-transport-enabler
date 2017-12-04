@@ -10,3 +10,9 @@ This project contains several subprojects:
 You can build all sub-projects at once using Gradle:
 
 `gradle clean build`
+
+**THIS IS AN UNOFFICIAL FORK**: It is kept in sync with the origin from
+[github.com/schildbach/public-transport-enabler](https://github.com/schildbach/public-transport-enabler) and applies selected pull requests until they are merged into upstream:
+
+* [Incofer, Costa Rica](https://github.com/schildbach/public-transport-enabler/pull/146)
+
