@@ -90,4 +90,7 @@ public enum NetworkId {
     // New Zealand
     NZ,
 
+    // Brazil
+    BR, BRFLORIPA,
+
 }
