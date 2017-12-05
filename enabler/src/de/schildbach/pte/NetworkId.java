@@ -93,4 +93,7 @@ public enum NetworkId {
     // Brazil
     BR, BRFLORIPA,
 
+    // Spain
+    SPAIN,
+
 }
