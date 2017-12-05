@@ -24,15 +24,10 @@ import okhttp3.HttpUrl;
  */
 public class EsteliProvider extends AbstractNavitiaProvider {
     private static String API_REGION = "ni-esteli";
-
-    public EsteliProvider(final HttpUrl apiBase, final String authorization) {
-        super(NetworkId.ESTELI, apiBase, authorization);
-
-        setTimeZone("America/Managua");
-    }
+    private static HttpUrl API_BASE = HttpUrl.parse("https://navitia.mapanica.net/").newBuilder().addPathSegment(SERVER_VERSION).build();
 
     public EsteliProvider(final String authorization) {
-        super(NetworkId.ESTELI, authorization);
+        super(NetworkId.ESTELI, API_BASE, authorization);
 
         setTimeZone("America/Managua");
     }

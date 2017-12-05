@@ -24,15 +24,10 @@ import okhttp3.HttpUrl;
  */
 public class ManaguaProvider extends AbstractNavitiaProvider {
     private static String API_REGION = "ni-managua";
-
-    public ManaguaProvider(final HttpUrl apiBase, final String authorization) {
-        super(NetworkId.MANAGUA, apiBase, authorization);
-
-        setTimeZone("America/Managua");
-    }
+    private static HttpUrl API_BASE = HttpUrl.parse("https://navitia.mapanica.net/").newBuilder().addPathSegment(SERVER_VERSION).build();
 
     public ManaguaProvider(final String authorization) {
-        super(NetworkId.MANAGUA, authorization);
+        super(NetworkId.MANAGUA, API_BASE, authorization);
 
         setTimeZone("America/Managua");
     }
