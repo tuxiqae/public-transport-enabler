@@ -283,7 +283,6 @@ public abstract class AbstractNavitiaProviderLiveTest extends AbstractProviderLi
 
         final QueryTripsResult result = queryTrips(fromResult.getLocations().get(0), null,
                 toResult.getLocations().get(0), new Date(), true, Product.ALL, WalkSpeed.NORMAL, Accessibility.NEUTRAL);
-        assertEquals(QueryTripsResult.Status.OK, result.status);
         final QueryTripsContext context = result.context;
 
         final QueryTripsResult nextResult = queryMoreTrips(context, true);
