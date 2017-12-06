@@ -36,6 +36,9 @@ public enum NetworkId {
     // France
     PARIS, FRANCESOUTHWEST, FRANCESOUTHEAST, FRANCENORTHWEST, FRANCENORTHEAST,
 
+    // Spain
+    SPAIN,
+
     // Belgium
     SNCB,
 
@@ -83,6 +86,9 @@ public enum NetworkId {
 
     // Australia
     SYDNEY, AUSTRALIA,
+
+    // New Zealand
+    NZ,
 
     // Africa
     GHANA,
