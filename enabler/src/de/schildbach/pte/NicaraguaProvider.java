@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,18 +17,14 @@
 
 package de.schildbach.pte;
 
-import okhttp3.HttpUrl;
-
 /**
- * @author Nico Alt
+ * @author ialokim
  */
-public class ManaguaProvider extends AbstractNavitiaProvider {
-    private static String API_REGION = "ni-managua";
-    private static HttpUrl API_BASE = HttpUrl.parse("https://navitia.mapanica.net/").newBuilder().addPathSegment(SERVER_VERSION).build();
+public class NicaraguaProvider extends AbstractNavitiaProvider {
+    private static final String API_REGION = "ni";
 
-    public ManaguaProvider(final String authorization) {
-        super(NetworkId.MANAGUA, API_BASE, authorization);
-
+    public NicaraguaProvider(final String authorization) {
+        super(NetworkId.NICARAGUA, authorization);
         setTimeZone("America/Managua");
     }
 
