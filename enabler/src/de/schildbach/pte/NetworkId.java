@@ -96,4 +96,6 @@ public enum NetworkId {
     // Brazil
     BR, BRFLORIPA,
 
+    // Nicaragua
+    NICARAGUA,
 }
