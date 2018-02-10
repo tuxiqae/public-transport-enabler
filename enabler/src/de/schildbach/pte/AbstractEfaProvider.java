@@ -1017,6 +1017,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                 return new Line(id, network, Product.HIGH_SPEED_TRAIN, "LCM" + trainNum);
             if ("Locomore".equals(longName))
                 return new Line(id, network, Product.HIGH_SPEED_TRAIN, "LOC" + Strings.nullToEmpty(trainNum));
+            if ("NJ".equals(trainType) && trainNum != null) // NightJet
+                return new Line(id, network, Product.HIGH_SPEED_TRAIN, "NJ" + trainNum);
 
             if ("IR".equals(trainType) || "Interregio".equals(trainName) || "InterRegio".equals(trainName))
                 return new Line(id, network, Product.REGIONAL_TRAIN, "IR" + trainNum);
@@ -1623,10 +1625,16 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                         final String mod = XmlPullUtil.valueTag(pp, "mod");
                         final String co = XmlPullUtil.valueTag(pp, "co");
                         XmlPullUtil.optValueTag(pp, "u", null);
+                        if ("-2000".equals(co)) { // STOP_INVALID
+                            result.set(new QueryDeparturesResult(header, QueryDeparturesResult.Status.INVALID_STATION));
+                        } else if ("-4050".equals(co)) { // NO_SERVINGLINES
+                            result.set(r);
+                        } else {
+                            log.debug("EFA error: {} {}", co, mod);
+                            result.set(new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN));
+                        }
                         XmlPullUtil.exit(pp, "err");
                         XmlPullUtil.exit(pp, "ers");
-                        log.debug("EFA error: {} {}", co, mod);
-                        result.set(new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN));
                     } else if (XmlPullUtil.optEnter(pp, "dps")) {
                         final Calendar plannedDepartureTime = new GregorianCalendar(timeZone);
                         final Calendar predictedDepartureTime = new GregorianCalendar(timeZone);
