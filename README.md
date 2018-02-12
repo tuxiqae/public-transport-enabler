@@ -18,3 +18,4 @@ You can build all sub-projects at once using Gradle:
 * [New York, United States](https://github.com/schildbach/public-transport-enabler/pull/97)
 * [Brazil](https://github.com/schildbach/public-transport-enabler/pull/179)
 * [California, United States](https://github.com/schildbach/public-transport-enabler/pull/164)
+* [Nicaragua](https://github.com/schildbach/public-transport-enabler/pull/181)
