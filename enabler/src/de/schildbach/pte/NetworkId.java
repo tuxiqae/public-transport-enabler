@@ -98,4 +98,7 @@ public enum NetworkId {
 
     // Nicaragua
     NICARAGUA,
+
+    // Hungary
+    HUNGARY,
 }
