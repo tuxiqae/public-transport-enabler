@@ -93,11 +93,11 @@ public enum NetworkId {
     // Africa
     GHANA,
 
-    // Brazil
-    BR, BRFLORIPA,
-
     // Nicaragua
     NICARAGUA,
+
+    // Brazil
+    BR, BRFLORIPA,
 
     // Hungary
     HUNGARY,
