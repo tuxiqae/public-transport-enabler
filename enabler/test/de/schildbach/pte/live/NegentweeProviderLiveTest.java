@@ -18,6 +18,7 @@
 package de.schildbach.pte.live;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Date;
@@ -30,6 +31,7 @@ import de.schildbach.pte.NetworkProvider;
 import de.schildbach.pte.dto.Location;
 import de.schildbach.pte.dto.LocationType;
 import de.schildbach.pte.dto.NearbyLocationsResult;
+import de.schildbach.pte.dto.Point;
 import de.schildbach.pte.dto.QueryDeparturesResult;
 import de.schildbach.pte.dto.QueryTripsResult;
 import de.schildbach.pte.dto.SuggestLocationsResult;
@@ -48,6 +50,13 @@ public class NegentweeProviderLiveTest extends AbstractProviderLiveTest {
                 new Location(LocationType.STATION, "station-amsterdam-centraal"));
         print(result);
         assertEquals(NearbyLocationsResult.Status.OK, result.status);
+
+        // Assert that queryNearbyStations only returns STATION locations
+        assertNotNull(result.locations);
+        assertTrue(result.locations.size() > 0);
+        for (Location location : result.locations) {
+            assertEquals(location.type, LocationType.STATION);
+        }
     }
 
     @Test
@@ -95,6 +104,13 @@ public class NegentweeProviderLiveTest extends AbstractProviderLiveTest {
     @Test
     public void suggestLocationsStreet() throws Exception {
         final SuggestLocationsResult result = suggestLocations("Isolatorweg");
+        print(result);
+        assertEquals(SuggestLocationsResult.Status.OK, result.status);
+    }
+
+    @Test
+    public void suggestLocationsAddress() throws Exception {
+        final SuggestLocationsResult result = suggestLocations("Isolatorweg 32");
         print(result);
         assertEquals(SuggestLocationsResult.Status.OK, result.status);
     }
@@ -157,6 +173,16 @@ public class NegentweeProviderLiveTest extends AbstractProviderLiveTest {
                 new Location(LocationType.STATION, "breda/bushalte-cornelis-florisstraat", null,
                         "Cornelis Florisstraat"),
                 new Date(), true, null, NetworkProvider.WalkSpeed.FAST, NetworkProvider.Accessibility.NEUTRAL);
+        print(result);
+        assertEquals(QueryTripsResult.Status.OK, result.status);
+    }
+
+    @Test
+    public void coordinatesTrip() throws Exception {
+        final QueryTripsResult result = queryTrips(new Location(LocationType.COORD, null, new Point(51677273, 4437548)),
+                new Location(LocationType.COORD, null, new Point(52162772, 4583171)),
+                new Location(LocationType.COORD, null, new Point(53347140, 6720583)), new Date(), true, null,
+                NetworkProvider.WalkSpeed.FAST, NetworkProvider.Accessibility.NEUTRAL);
         print(result);
         assertEquals(QueryTripsResult.Status.OK, result.status);
     }

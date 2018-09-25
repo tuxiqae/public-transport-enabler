@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 the original author or authors.
+ * Copyright 2018 Erik Uhlmann.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,28 +17,26 @@
 
 package de.schildbach.pte;
 
-import de.schildbach.pte.dto.Position;
-
 import okhttp3.HttpUrl;
 
 /**
- * @author Andreas Schildbach
+ * @author Erik Uhlmann
  */
-public class MvgProvider extends AbstractEfaProvider {
-    private static final HttpUrl API_BASE = HttpUrl.parse("https://westfalenfahrplan.de/std3/");
+public class MassachusettsProvider extends AbstractNavitiaProvider {
+    private static final String API_REGION = "us-ma";
 
-    public MvgProvider() {
-        super(NetworkId.MVG, API_BASE);
+    public MassachusettsProvider(HttpUrl apiBase, String authorization) {
+        super(NetworkId.MASSACHUSETTS, apiBase, authorization);
+        setTimeZone("America/New_York");
+    }
+
+    public MassachusettsProvider(final String authorization) {
+        super(NetworkId.MASSACHUSETTS, authorization);
+        setTimeZone("America/New_York");
     }
 
     @Override
-    protected Position parsePosition(final String position) {
-        if (position == null)
-            return null;
-
-        if (position.startsWith(" - "))
-            return super.parsePosition(position.substring(3));
-
-        return super.parsePosition(position);
+    protected String region() {
+        return API_REGION;
     }
 }
