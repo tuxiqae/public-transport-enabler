@@ -33,13 +33,13 @@ public class NasaProvider extends AbstractHafasClientInterfaceProvider {
             Product.ON_DEMAND, Product.REGIONAL_TRAIN, Product.REGIONAL_TRAIN };
 
     public NasaProvider() {
-        this("{\"aid\":\"nasa-apps\"}");
+        this("{\"aid\":\"nasa-apps\",\"type\":\"AID\"}");
     }
 
     public NasaProvider(final String apiAuthorization) {
         super(NetworkId.NASA, API_BASE, PRODUCTS_MAP);
         setApiVersion("1.13");
-        setApiClient("{\"id\":\"NASA\"}");
+        setApiClient("{\"id\":\"NASA\",\"type\":\"AND\"}");
         setApiAuthorization(apiAuthorization);
     }
 

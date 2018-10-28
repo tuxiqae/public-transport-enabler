@@ -74,7 +74,7 @@ import okhttp3.HttpUrl;
 
 /**
  * This is an implementation of the HCI (HAFAS Client Interface).
- * 
+ *
  * @author Andreas Schildbach
  */
 public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafasProvider {
@@ -163,7 +163,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
     protected final NearbyLocationsResult jsonLocGeoPos(final EnumSet<LocationType> types, final int lat, final int lon,
             int maxDistance) throws IOException {
         if (maxDistance == 0)
-            maxDistance = 20000;
+            maxDistance = DEFAULT_MAX_DISTANCE;
         final boolean getPOIs = types.contains(LocationType.POI);
         final String request = wrapJsonApiRequest("LocGeoPos", "{\"ring\":" //
                 + "{\"cCrd\":{\"x\":" + lon + ",\"y\":" + lat + "},\"maxDist\":" + maxDistance + "}," //
@@ -229,16 +229,12 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         final CharSequence normalizedStationId = normalizeStationId(stationId);
         final CharSequence stbFltrEquiv = Boolean.toString(!equivs);
         final CharSequence maxJny = Integer.toString(maxDepartures != 0 ? maxDepartures : DEFAULT_MAX_DEPARTURES);
-        final CharSequence getPasslist = Boolean.toString(true); // traffic expensive
-        final String request = wrapJsonApiRequest("StationBoard",
-                "{\"type\":\"DEP\"," //
-                        + "\"date\":\"" + jsonDate + "\"," //
-                        + "\"time\":\"" + jsonTime + "\"," //
-                        + "\"stbLoc\":{\"type\":\"S\"," + "\"state\":\"F\"," // F/M
-                        + "\"extId\":" + JSONObject.quote(normalizedStationId.toString()) + "}," //
-                        + "\"stbFltrEquiv\":" + stbFltrEquiv + ",\"maxJny\":" + maxJny + ",\"getPasslist\":"
-                        + getPasslist + "}",
-                false);
+        final String request = wrapJsonApiRequest("StationBoard", "{\"type\":\"DEP\"," //
+                + "\"date\":\"" + jsonDate + "\"," //
+                + "\"time\":\"" + jsonTime + "\"," //
+                + "\"stbLoc\":{\"type\":\"S\"," + "\"state\":\"F\"," // F/M
+                + "\"extId\":" + JSONObject.quote(normalizedStationId.toString()) + "}," //
+                + "\"stbFltrEquiv\":" + stbFltrEquiv + ",\"maxJny\":" + maxJny + "}", false);
 
         final HttpUrl url = requestUrl(request);
         final CharSequence page = httpClient.get(url, request, "application/json");
@@ -452,7 +448,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                 + "\"jnyFltrL\":[{\"value\":\"" + jnyFltr + "\",\"mode\":\"BIT\",\"type\":\"PROD\"}]," //
                 + "\"gisFltrL\":[{\"mode\":\"FB\",\"profile\":{\"type\":\"F\",\"linDistRouting\":false,\"maxdist\":2000},\"type\":\"M\",\"meta\":\""
                 + meta + "\"}]," //
-                + "\"getPolyline\":false,\"getPasslist\":true,\"getIST\":false,\"getEco\":false,\"extChgTime\":-1}", //
+                + "\"getPolyline\":false,\"getIST\":false,\"getEco\":false,\"extChgTime\":-1}", //
                 false);
 
         final HttpUrl url = requestUrl(request);
