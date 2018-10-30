@@ -90,6 +90,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
     @Nullable
     public String requestMicMacSalt;
 
+    private static final String SERVER_PRODUCT = "hci";
     private static final HashFunction MD5 = Hashing.md5();
     private static final BaseEncoding HEX = BaseEncoding.base16().lowerCase();
 
@@ -453,7 +454,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                 + "\"jnyFltrL\":[{\"value\":\"" + jnyFltr + "\",\"mode\":\"BIT\",\"type\":\"PROD\"}]," //
                 + "\"gisFltrL\":[{\"mode\":\"FB\",\"profile\":{\"type\":\"F\",\"linDistRouting\":false,\"maxdist\":2000},\"type\":\"M\",\"meta\":\""
                 + meta + "\"}]," //
-                + "\"getPolyline\":false,\"getIST\":false,\"getEco\":false,\"extChgTime\":-1}", //
+                + "\"getPolyline\":false,\"getPasslist\":true,\"getIST\":false,\"getEco\":false,\"extChgTime\":-1}", //
                 false);
 
         final HttpUrl url = requestUrl(request);
@@ -536,13 +537,18 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                         final Location destination = dirTxt != null ? new Location(LocationType.ANY, null, null, dirTxt)
                                 : null;
 
-                        final JSONArray stopList = jny.getJSONArray("stopL");
-                        checkState(stopList.length() >= 2);
-                        final List<Stop> intermediateStops = new ArrayList<>(stopList.length());
-                        for (int iStop = 1; iStop < stopList.length() - 1; iStop++) {
-                            final JSONObject stop = stopList.getJSONObject(iStop);
-                            final Stop intermediateStop = parseJsonStop(stop, locList, c, baseDate);
-                            intermediateStops.add(intermediateStop);
+                        final JSONArray stopList = jny.optJSONArray("stopL");
+                        final List<Stop> intermediateStops;
+                        if (stopList != null) {
+                            checkState(stopList.length() >= 2);
+                            intermediateStops = new ArrayList<>(stopList.length());
+                            for (int iStop = 1; iStop < stopList.length() - 1; iStop++) {
+                                final JSONObject stop = stopList.getJSONObject(iStop);
+                                final Stop intermediateStop = parseJsonStop(stop, locList, c, baseDate);
+                                intermediateStops.add(intermediateStop);
+                            }
+                        } else {
+                            intermediateStops = null;
                         }
 
                         final JSONArray remList = jny.optJSONArray("remL");
