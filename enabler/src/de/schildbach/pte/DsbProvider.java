@@ -75,6 +75,10 @@ public class DsbProvider extends AbstractHafasLegacyProvider {
             return Product.REGIONAL_TRAIN;
         if ("PP".equals(ucType))
             return Product.REGIONAL_TRAIN;
+        if ("L".equals(ucType)) // Lokalbane
+            return Product.REGIONAL_TRAIN;
+        if ("PÅGATOG".equals(ucType))
+            return Product.REGIONAL_TRAIN;
 
         if ("S-TOG".equals(ucType))
             return Product.SUBURBAN_TRAIN;
@@ -90,6 +94,8 @@ public class DsbProvider extends AbstractHafasLegacyProvider {
         if ("TOGBUS".equals(ucType))
             return Product.BUS;
         if ("FLEXBUS".equals(ucType))
+            return Product.BUS;
+        if ("FJERNBUS".equals(ucType))
             return Product.BUS;
 
         if ("TELEBUS".equals(ucType))
