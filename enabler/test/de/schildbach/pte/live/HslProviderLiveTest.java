@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,13 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import de.schildbach.pte.HslProvider;
-import de.schildbach.pte.dto.Point;
+import de.schildbach.pte.dto.Location;
+import de.schildbach.pte.dto.LocationType;
+import de.schildbach.pte.dto.NearbyLocationsResult;
+import de.schildbach.pte.dto.QueryDeparturesResult;
+import de.schildbach.pte.dto.QueryTripsResult;
+import de.schildbach.pte.dto.SuggestLocationsResult;
+import de.schildbach.pte.dto.Trip;
 
 /**
  * @author Adrian Perez de Castro <aperez@igalia.com>
@@ -73,8 +79,45 @@ public class HslProviderLiveTest extends AbstractNavitiaProviderLiveTest {
 	}
 
     @Test
-    public void queryDeparturesInvalidStation() throws Exception {
-        queryDeparturesInvalidStation("stop_point:OFI:SP:999999");
+    public void shortTrip() throws Exception {
+        final QueryTripsResult result = queryTrips(
+                new Location(LocationType.STATION, null, "", "Gustaf Hällströmin katu 1"), null,
+                new Location(LocationType.STATION, null, "", "Tyynenmerenkatu 11"), new Date(), true, null);
+        print(result);
+        assertTimesInSequence(result.trips);
+
+        assertEquals(QueryTripsResult.Status.OK, result.status);
+        assertTrue(result.trips.size() > 0);
+
+        assertTrue(result.context.canQueryLater());
+
+        final QueryTripsResult laterResult = queryMoreTrips(result.context, true);
+        print(laterResult);
+        assertEquals(QueryTripsResult.Status.OK, laterResult.status);
+        assertTrue(laterResult.trips.size() > result.trips.size());
+        assertTimesInSequence(laterResult.trips);
+
+        assertTrue(laterResult.context.canQueryLater());
+
+        final QueryTripsResult later2Result = queryMoreTrips(laterResult.context, true);
+        print(later2Result);
+        for (Trip trip : later2Result.trips) {
+            System.out.println("LATER2 " + trip.getFirstDepartureTime() + " " + trip.getId());
+        }
+        assertEquals(QueryTripsResult.Status.OK, later2Result.status);
+        assertTrue(later2Result.trips.size() > laterResult.trips.size());
+        assertTimesInSequence(later2Result.trips);
+
+        assertTrue(later2Result.context.canQueryEarlier());
+
+        final QueryTripsResult earlierResult = queryMoreTrips(later2Result.context, false);
+        print(earlierResult);
+        for (Trip trip : earlierResult.trips) {
+            System.out.println("EARLIER " + trip.getFirstDepartureTime() + " " + trip.getId());
+        }
+        assertEquals(QueryTripsResult.Status.OK, earlierResult.status);
+        assertTrue(earlierResult.trips.size() > later2Result.trips.size());
+        assertTimesInSequence(earlierResult.trips);
     }
 
 	@Test
