@@ -403,6 +403,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
     private static final Joiner JOINER = Joiner.on(' ').skipNulls();
 
     private Location jsonTripSearchIdentify(final Location location) throws IOException {
+        if (location.hasId())
+            return location;
         if (location.hasName()) {
             final List<Location> locations = jsonLocMatch(JOINER.join(location.place, location.name), 1).getLocations();
             if (!locations.isEmpty())
@@ -418,36 +420,29 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
     }
 
     protected final QueryTripsResult jsonTripSearch(Location from, @Nullable Location via, Location to, final Date time,
-            final boolean dep, final @Nullable Set<Product> products, final WalkSpeed walkSpeed,
-            final String moreContext) throws IOException {
-        if (!from.hasId()) {
-            from = jsonTripSearchIdentify(from);
-            if (from == null)
-                return new QueryTripsResult(new ResultHeader(network, SERVER_PRODUCT),
-                        QueryTripsResult.Status.UNKNOWN_FROM);
-        }
-
-        if (via != null && !via.hasId()) {
+            final boolean dep, final @Nullable Set<Product> products, final @Nullable WalkSpeed walkSpeed,
+            final @Nullable String moreContext) throws IOException {
+        from = jsonTripSearchIdentify(from);
+        if (from == null)
+            return new QueryTripsResult(new ResultHeader(network, SERVER_PRODUCT),
+                    QueryTripsResult.Status.UNKNOWN_FROM);
+        if (via != null) {
             via = jsonTripSearchIdentify(via);
             if (via == null)
                 return new QueryTripsResult(new ResultHeader(network, SERVER_PRODUCT),
                         QueryTripsResult.Status.UNKNOWN_VIA);
         }
-
-        if (!to.hasId()) {
-            to = jsonTripSearchIdentify(to);
-            if (to == null)
-                return new QueryTripsResult(new ResultHeader(network, SERVER_PRODUCT),
-                        QueryTripsResult.Status.UNKNOWN_TO);
-        }
+        to = jsonTripSearchIdentify(to);
+        if (to == null)
+            return new QueryTripsResult(new ResultHeader(network, SERVER_PRODUCT), QueryTripsResult.Status.UNKNOWN_TO);
 
         final Calendar c = new GregorianCalendar(timeZone);
         c.setTime(time);
         final CharSequence outDate = jsonDate(c);
         final CharSequence outTime = jsonTime(c);
         final CharSequence outFrwd = Boolean.toString(dep);
-        final CharSequence jnyFltr = productsString(products);
-        final String meta = "foot_speed_" + walkSpeed.name().toLowerCase();
+        final CharSequence jnyFltr = products != null ? productsString(products) : null;
+        final String meta = "foot_speed_" + (walkSpeed != null ? walkSpeed : WalkSpeed.NORMAL).name().toLowerCase();
         final CharSequence jsonContext = moreContext != null ? "\"ctxScr\":" + JSONObject.quote(moreContext) + "," : "";
         final String request = wrapJsonApiRequest("TripSearch", "{" //
                 + jsonContext //
@@ -457,7 +452,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                 + "\"outDate\":\"" + outDate + "\"," //
                 + "\"outTime\":\"" + outTime + "\"," //
                 + "\"outFrwd\":" + outFrwd + "," //
-                + "\"jnyFltrL\":[{\"value\":\"" + jnyFltr + "\",\"mode\":\"BIT\",\"type\":\"PROD\"}]," //
+                + (jnyFltr != null
+                        ? "\"jnyFltrL\":[{\"value\":\"" + jnyFltr + "\",\"mode\":\"BIT\",\"type\":\"PROD\"}]," : "") //
                 + "\"gisFltrL\":[{\"mode\":\"FB\",\"profile\":{\"type\":\"F\",\"linDistRouting\":false,\"maxdist\":2000},\"type\":\"M\",\"meta\":\""
                 + meta + "\"}]," //
                 + "\"getPolyline\":false,\"getPasslist\":true,\"getIST\":false,\"getEco\":false,\"extChgTime\":-1}", //
