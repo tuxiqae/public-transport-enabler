@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 
+import de.schildbach.pte.dto.Line;
 import de.schildbach.pte.dto.Product;
 import de.schildbach.pte.dto.Style;
 import de.schildbach.pte.dto.Style.Shape;
@@ -62,13 +63,16 @@ public class ZvvProvider extends AbstractHafasClientInterfaceProvider {
             }
         }
 
+        for (final String place : PLACES) {
+            if (name.startsWith(place + " "))
+                return new String[] { place, name.substring(place.length() + 1) };
+            else if (name.startsWith(place + ", "))
+                return new String[] { place, name.substring(place.length() + 2) };
+        }
+
         final Matcher m = P_SPLIT_NAME_FIRST_COMMA.matcher(name);
         if (m.matches())
             return new String[] { m.group(1), m.group(2) };
-
-        for (final String place : PLACES)
-            if (name.startsWith(place + " ") || name.startsWith(place + ","))
-                return new String[] { place, name.substring(place.length() + 1) };
         return super.splitStationName(name);
     }
 
@@ -91,6 +95,23 @@ public class ZvvProvider extends AbstractHafasClientInterfaceProvider {
     @Override
     public Set<Product> defaultProducts() {
         return Product.ALL;
+    }
+
+    @Override
+    protected Line newLine(final String operator, final Product product, final String name, final String number) {
+        final String[] splitName = name.split("\\s+", 2);
+        if (splitName.length != 2)
+            return super.newLine(operator, product, name, number);
+
+        final String newName = name + (number != null ? " (" + number + ")" : "");
+        final String newNumber;
+        if (product == Product.BUS && "Bus".equals(splitName[0]))
+            newNumber = splitName[1];
+        else if (product == Product.TRAM && "Trm".equals(splitName[0]))
+            newNumber = splitName[1];
+        else
+            newNumber = splitName[0] + splitName[1];
+        return super.newLine(operator, product, newName, newNumber);
     }
 
     private static final Map<String, Style> STYLES = new HashMap<>();
