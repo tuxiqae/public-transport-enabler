@@ -53,6 +53,12 @@ public class ZvvProviderLiveTest extends AbstractProviderLiveTest {
     }
 
     @Test
+    public void queryDeparturesSuburbanTrain() throws Exception {
+        final QueryDeparturesResult result = queryDepartures("8500169", false); // Muriaux
+        print(result);
+    }
+
+    @Test
     public void queryDeparturesTram() throws Exception {
         final QueryDeparturesResult result = queryDepartures("8591276", false); // Milchbuck
         print(result);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 the original author or authors.
+ * Copyright the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -99,6 +99,8 @@ public class ZvvProvider extends AbstractHafasClientInterfaceProvider {
 
     @Override
     protected Line newLine(final String operator, final Product product, final String name, final String number) {
+        if (name == null)
+            return super.newLine(operator, product, name, number);
         final String[] splitName = name.split("\\s+", 2);
         if (splitName.length != 2)
             return super.newLine(operator, product, name, number);
@@ -106,6 +108,8 @@ public class ZvvProvider extends AbstractHafasClientInterfaceProvider {
         final String newName = name + (number != null ? " (" + number + ")" : "");
         final String newNumber;
         if (product == Product.BUS && "Bus".equals(splitName[0]))
+            newNumber = splitName[1];
+        else if (product == Product.BUS && "Tro".equals(splitName[0]))
             newNumber = splitName[1];
         else if (product == Product.TRAM && "Trm".equals(splitName[0]))
             newNumber = splitName[1];
