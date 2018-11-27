@@ -514,6 +514,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
                 if ("LOCATION".equals(err) && "HCI Service: location missing or invalid".equals(errTxt))
                     return new QueryTripsResult(header, QueryTripsResult.Status.UNKNOWN_LOCATION);
+                if ("CGI_READ_FAILED".equals(err))
+                    return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + (errTxt != null ? " " + errTxt : ""));
             }
             final JSONObject res = svcRes.getJSONObject("res");
@@ -720,7 +722,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         final String err = serverInfo.optString("err", null);
         if (err != null && !"OK".equals(err)) {
             final String errTxt = serverInfo.optString("errTxt");
-            throw new RuntimeException(err + " " + errTxt);
+            log.info("ServerInfo error: {} {}, ignoring", err, errTxt);
+            return new ResultHeader(network, SERVER_PRODUCT, serverVersion, null, 0, null);
         }
         final JSONObject res = serverInfo.getJSONObject("res");
         final Calendar c = new GregorianCalendar(timeZone);
