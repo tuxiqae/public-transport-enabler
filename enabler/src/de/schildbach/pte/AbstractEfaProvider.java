@@ -247,44 +247,49 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
 
         try {
             final List<SuggestedLocation> locations = new ArrayList<>();
-
             final JSONObject head = new JSONObject(page.toString());
             final JSONObject stopFinder = head.optJSONObject("stopFinder");
-            final JSONArray stops;
-            if (stopFinder == null) {
-                stops = head.getJSONArray("stopFinder");
-            } else {
+            if (stopFinder != null) {
                 final JSONArray messages = stopFinder.optJSONArray("message");
                 if (messages != null) {
-                    for (int i = 0; i < messages.length(); i++) {
-                        final JSONObject message = messages.optJSONObject(i);
-                        final String messageName = message.getString("name");
-                        final String messageValue = Strings.emptyToNull(message.getString("value"));
-                        if ("code".equals(messageName) && !"-8010".equals(messageValue)
-                                && !"-8011".equals(messageValue))
-                            return new SuggestLocationsResult(header, SuggestLocationsResult.Status.SERVICE_DOWN);
-                    }
+                    final SuggestLocationsResult.Status status = parseJsonMessages(messages);
+                    if (status != null)
+                        return new SuggestLocationsResult(header, status);
                 }
 
                 final JSONObject points = stopFinder.optJSONObject("points");
                 if (points != null) {
-                    final JSONObject stop = points.getJSONObject("point");
-                    final SuggestedLocation location = parseJsonStop(stop);
+                    final JSONObject point = points.getJSONObject("point");
+                    final SuggestedLocation location = parseJsonPoint(point);
                     locations.add(location);
-                    return new SuggestLocationsResult(header, locations);
                 }
 
-                stops = stopFinder.optJSONArray("points");
-                if (stops == null)
-                    return new SuggestLocationsResult(header, locations);
-            }
+                final JSONArray pointsArray = stopFinder.optJSONArray("points");
+                if (pointsArray != null) {
+                    final int nPoints = pointsArray.length();
+                    for (int i = 0; i < nPoints; i++) {
+                        final JSONObject point = pointsArray.optJSONObject(i);
+                        final SuggestedLocation location = parseJsonPoint(point);
+                        locations.add(location);
+                    }
+                }
+            } else {
+                final JSONArray messages = head.optJSONArray("message");
+                if (messages != null) {
+                    final SuggestLocationsResult.Status status = parseJsonMessages(messages);
+                    if (status != null)
+                        return new SuggestLocationsResult(header, status);
+                }
 
-            final int nStops = stops.length();
-
-            for (int i = 0; i < nStops; i++) {
-                final JSONObject stop = stops.optJSONObject(i);
-                final SuggestedLocation location = parseJsonStop(stop);
-                locations.add(location);
+                final JSONArray pointsArray = head.optJSONArray("stopFinder");
+                if (pointsArray != null) {
+                    final int nPoints = pointsArray.length();
+                    for (int i = 0; i < nPoints; i++) {
+                        final JSONObject point = pointsArray.optJSONObject(i);
+                        final SuggestedLocation location = parseJsonPoint(point);
+                        locations.add(location);
+                    }
+                }
             }
 
             return new SuggestLocationsResult(header, locations);
@@ -293,35 +298,51 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
         }
     }
 
-    private SuggestedLocation parseJsonStop(final JSONObject stop) throws JSONException {
-        String type = stop.getString("type");
+    private SuggestLocationsResult.Status parseJsonMessages(final JSONArray messages) throws JSONException {
+        final int messagesSize = messages.length();
+        for (int i = 0; i < messagesSize; i++) {
+            final JSONObject message = messages.optJSONObject(i);
+            final String messageName = message.getString("name");
+            final String messageValue = Strings.emptyToNull(message.getString("value"));
+            if ("code".equals(messageName) && !"-8010".equals(messageValue) && !"-8011".equals(messageValue))
+                return SuggestLocationsResult.Status.SERVICE_DOWN;
+        }
+        return null;
+    }
+
+    private SuggestedLocation parseJsonPoint(final JSONObject point) throws JSONException {
+        String type = point.getString("type");
         if ("any".equals(type))
-            type = stop.getString("anyType");
-        final String id = stop.getString("stateless");
-        final String name = normalizeLocationName(stop.optString("name"));
-        final String object = normalizeLocationName(stop.optString("object"));
-        final String postcode = stop.optString("postcode");
-        final int quality = stop.getInt("quality");
-        final JSONObject ref = stop.getJSONObject("ref");
+            type = point.getString("anyType");
+        final String stateless = point.getString("stateless");
+        final String name = normalizeLocationName(point.optString("name"));
+        final String object = normalizeLocationName(point.optString("object"));
+        final String postcode = point.optString("postcode");
+        final int quality = point.getInt("quality");
+        final JSONObject ref = point.getJSONObject("ref");
+        final String id = ref.getString("id");
         String place = ref.getString("place");
         if (place != null && place.length() == 0)
             place = null;
         final Point coord = parseCoord(ref.optString("coords", null));
 
         final Location location;
-        if ("stop".equals(type))
+        if ("stop".equals(type)) {
+            if (!stateless.startsWith(id))
+                throw new RuntimeException("id mismatch: '" + id + "' vs '" + stateless + "'");
             location = new Location(LocationType.STATION, id, coord, place, object);
-        else if ("poi".equals(type))
-            location = new Location(LocationType.POI, id, coord, place, object);
-        else if ("crossing".equals(type))
-            location = new Location(LocationType.ADDRESS, id, coord, place, object);
-        else if ("street".equals(type) || "address".equals(type) || "singlehouse".equals(type)
-                || "buildingname".equals(type) || "loc".equals(type))
-            location = new Location(LocationType.ADDRESS, id, coord, place, name);
-        else if ("postcode".equals(type))
-            location = new Location(LocationType.ADDRESS, id, coord, place, postcode);
-        else
+        } else if ("poi".equals(type)) {
+            location = new Location(LocationType.POI, stateless, coord, place, object);
+        } else if ("crossing".equals(type)) {
+            location = new Location(LocationType.ADDRESS, stateless, coord, place, object);
+        } else if ("street".equals(type) || "address".equals(type) || "singlehouse".equals(type)
+                || "buildingname".equals(type) || "loc".equals(type)) {
+            location = new Location(LocationType.ADDRESS, stateless, coord, place, name);
+        } else if ("postcode".equals(type)) {
+            location = new Location(LocationType.ADDRESS, stateless, coord, place, postcode);
+        } else {
             throw new JSONException("unknown type: " + type);
+        }
 
         return new SuggestedLocation(location, quality);
     }
@@ -343,44 +364,6 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             url.addEncodedQueryParameter("useHouseNumberList", "true");
             url.addEncodedQueryParameter("anyMaxSizeHitList", "500");
         }
-    }
-
-    protected SuggestLocationsResult xmlStopfinderRequest(final Location constraint) throws IOException {
-        final HttpUrl.Builder url = stopFinderEndpoint.newBuilder();
-        appendStopfinderRequestParameters(url, constraint, "XML");
-        final AtomicReference<SuggestLocationsResult> result = new AtomicReference<>();
-
-        final HttpClient.Callback callback = new HttpClient.Callback() {
-            @Override
-            public void onSuccessful(final CharSequence bodyPeek, final ResponseBody body) throws IOException {
-                try {
-                    final XmlPullParser pp = parserFactory.newPullParser();
-                    pp.setInput(body.byteStream(), null); // Read encoding from XML declaration
-                    final ResultHeader header = enterItdRequest(pp);
-
-                    final List<SuggestedLocation> locations = new ArrayList<>();
-
-                    XmlPullUtil.enter(pp, "itdStopFinderRequest");
-
-                    processItdOdv(pp, "sf", new ProcessItdOdvCallback() {
-                        @Override
-                        public void location(final String nameState, final Location location, final int matchQuality) {
-                            locations.add(new SuggestedLocation(location, matchQuality));
-                        }
-                    });
-
-                    XmlPullUtil.skipExit(pp, "itdStopFinderRequest");
-
-                    result.set(new SuggestLocationsResult(header, locations));
-                } catch (final XmlPullParserException x) {
-                    throw new ParserException("cannot parse xml: " + bodyPeek, x);
-                }
-            }
-        };
-
-        httpClient.getInputStream(callback, url.build(), httpReferer);
-
-        return result.get();
     }
 
     protected SuggestLocationsResult mobileStopfinderRequest(final Location constraint) throws IOException {
