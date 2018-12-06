@@ -38,6 +38,7 @@ public class NvbwProvider extends AbstractEfaProvider {
     public NvbwProvider() {
         super(NetworkId.NVBW, API_BASE);
         setIncludeRegionId(false);
+        setSessionCookieName("EFABWLB");
     }
 
     private static final Pattern P_LINE_S_AVG_VBK = Pattern.compile("(S\\d+) \\((?:AVG|VBK)\\)");
@@ -51,6 +52,9 @@ public class NvbwProvider extends AbstractEfaProvider {
                 return new Line(id, network, Product.HIGH_SPEED_TRAIN, "ICE");
             if ("InterCity".equals(trainName) && trainNum == null)
                 return new Line(id, network, Product.HIGH_SPEED_TRAIN, "IC");
+            if (("IC3".equals(trainNum) || "IC4".equals(trainNum) || "IC5".equals(trainNum) || "IC8".equals(trainNum))
+                    && trainType == null)
+                return new Line(id, network, Product.HIGH_SPEED_TRAIN, trainNum);
             if ("Fernreisezug externer EU".equals(trainName) && trainNum == null)
                 return new Line(id, network, Product.HIGH_SPEED_TRAIN, null);
             if ("SuperCity".equals(trainName) && trainNum == null)

@@ -52,7 +52,7 @@ public enum NetworkId {
     SE,
 
     // Finland
-    FI,
+    FINLAND,
 
     // Luxembourg
     LU,

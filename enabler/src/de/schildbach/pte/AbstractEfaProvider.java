@@ -810,9 +810,9 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             place = locality != null ? locality : defaultPlace;
             name = buildingName != null ? buildingName : streetName;
         } else if ("coord".equals(type)) {
-            locationType = LocationType.COORD;
-            place = null;
-            name = null;
+            locationType = LocationType.ADDRESS;
+            place = defaultPlace;
+            name = nameElem;
         } else {
             throw new IllegalArgumentException("unknown type/anyType: " + type);
         }
@@ -1097,6 +1097,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                 return new Line(id, network, Product.REGIONAL_TRAIN, "MR" + trainNum);
             if ("MRB".equals(trainType) || "Mitteldeutsche Regiobahn".equals(trainName))
                 return new Line(id, network, Product.REGIONAL_TRAIN, "MRB" + trainNum);
+            if ("MRB26".equals(trainNum) && trainType == null)
+                return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
             if ("ABR".equals(trainType) || "ABELLIO Rail NRW GmbH".equals(trainName))
                 return new Line(id, network, Product.REGIONAL_TRAIN, "ABR" + trainNum);
             if ("NEB".equals(trainType) || "NEB Niederbarnimer Eisenbahn".equals(trainName))

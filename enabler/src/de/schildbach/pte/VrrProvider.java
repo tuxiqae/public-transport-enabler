@@ -47,13 +47,12 @@ public class VrrProvider extends AbstractEfaProvider {
 
     public VrrProvider(final HttpUrl apiBase) {
         super(NetworkId.VRR, apiBase);
-
         setIncludeRegionId(false);
         setUseProxFootSearch(false);
         setNeedsSpEncId(true);
         setUseRouteIndexAsTripId(false);
         setStyles(STYLES);
-        setRequestUrlEncoding(Charsets.ISO_8859_1);
+        setRequestUrlEncoding(Charsets.UTF_8);
         setSessionCookieName("vrr-efa-lb");
     }
 
@@ -79,8 +78,6 @@ public class VrrProvider extends AbstractEfaProvider {
                 return new Line(id, network, Product.REGIONAL_TRAIN, symbol);
             if ("NordWestBahn".equals(trainName) && symbol != null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, symbol);
-            if ("MRB26".equals(trainNum) && trainType == null)
-                return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
 
             if (trainType == null && "SEV7".equals(trainNum))
                 return new Line(id, network, Product.BUS, trainNum);
@@ -94,6 +91,9 @@ public class VrrProvider extends AbstractEfaProvider {
             // H-Bahn TU Dortmund
             if ("H-Bahn".equals(trainName) || (longName != null && longName.startsWith("H-Bahn")))
                 return new Line(id, network, Product.CABLECAR, name);
+        } else if ("11".equals(mot)) {
+            if ("Bürgerbus".equals(trainName) || "BürgerBus".equals(trainName))
+                return new Line(id, network, Product.BUS, symbol);
         }
 
         return super.parseLine(id, network, mot, symbol, name, longName, trainType, trainNum, trainName);

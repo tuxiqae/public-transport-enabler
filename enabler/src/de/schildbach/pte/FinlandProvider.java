@@ -17,19 +17,33 @@
 
 package de.schildbach.pte;
 
-import com.google.common.base.Charsets;
+import de.schildbach.pte.util.WordUtils;
 
 import okhttp3.HttpUrl;
 
 /**
- * @author Andreas Schildbach
+ * @author Adrian Perez de Castro <aperez@igalia.com>
  */
-public class DingProvider extends AbstractEfaProvider {
-    private static final HttpUrl API_BASE = HttpUrl.parse("https://www.ding.eu/ding3/");
-    // https://www.ding.eu/swu/
+public class FinlandProvider extends AbstractNavitiaProvider {
+    private static String API_REGION = "fi";
 
-    public DingProvider() {
-        super(NetworkId.DING, API_BASE);
-        setRequestUrlEncoding(Charsets.UTF_8);
+    public FinlandProvider(final HttpUrl apiBase, final String authorization) {
+        super(NetworkId.FINLAND, apiBase, authorization);
+        setTimeZone("Europe/Helsinki");
+    }
+
+    public FinlandProvider(final String authorization) {
+        super(NetworkId.FINLAND, authorization);
+        setTimeZone("Europe/Helsinki");
+    }
+
+    @Override
+    public String region() {
+        return API_REGION;
+    }
+
+    @Override
+    protected String getLocationName(final String name) {
+        return WordUtils.capitalizeFully(name);
     }
 }

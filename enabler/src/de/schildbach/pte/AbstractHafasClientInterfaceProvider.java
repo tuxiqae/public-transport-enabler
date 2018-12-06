@@ -153,7 +153,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
 
     @Override
     public SuggestLocationsResult suggestLocations(final CharSequence constraint) throws IOException {
-        return jsonLocMatch(constraint, 0);
+        return jsonLocMatch(constraint, null, 0);
     }
 
     @Override
@@ -205,9 +205,11 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
             checkState("LocGeoPos".equals(svcRes.getString("meth")));
             final String err = svcRes.getString("err");
             if (!"OK".equals(err)) {
-                final String errTxt = svcRes.getString("errTxt");
+                final String errTxt = svcRes.optString("errTxt");
                 log.debug("Hafas error: {} {}", err, errTxt);
                 if ("FAIL".equals(err) && "HCI Service: request failed".equals(errTxt))
+                    return new NearbyLocationsResult(header, NearbyLocationsResult.Status.SERVICE_DOWN);
+                if ("CGI_READ_FAILED".equals(err))
                     return new NearbyLocationsResult(header, NearbyLocationsResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + " " + errTxt);
             }
@@ -273,11 +275,13 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
             checkState("StationBoard".equals(svcRes.getString("meth")));
             final String err = svcRes.getString("err");
             if (!"OK".equals(err)) {
-                final String errTxt = svcRes.getString("errTxt");
+                final String errTxt = svcRes.optString("errTxt");
                 log.debug("Hafas error: {} {}", err, errTxt);
                 if ("LOCATION".equals(err) && "HCI Service: location missing or invalid".equals(errTxt))
                     return new QueryDeparturesResult(header, QueryDeparturesResult.Status.INVALID_STATION);
                 if ("FAIL".equals(err) && "HCI Service: request failed".equals(errTxt))
+                    return new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN);
+                if ("CGI_READ_FAILED".equals(err))
                     return new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + " " + errTxt);
             }
@@ -304,7 +308,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
 
                     final Date predictedTime = parseJsonTime(c, baseDate, stbStop.optString("dTimeR", null));
 
-                    final Line line = lines.get(stbStop.getInt("dProdX"));
+                    final int dProdX = stbStop.optInt("dProdX", -1);
+                    final Line line = dProdX != -1 ? lines.get(dProdX) : null;
 
                     final Location location = equivs ? parseLoc(locList, stbStop.getInt("locX"), null)
                             : new Location(LocationType.STATION, stationId);
@@ -337,16 +342,18 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                         }
                     }
 
-                    final Departure departure = new Departure(plannedTime, predictedTime, line, position, destination,
-                            null, message);
+                    if (line != null) {
+                        final Departure departure = new Departure(plannedTime, predictedTime, line, position,
+                                destination, null, message);
 
-                    StationDepartures stationDepartures = findStationDepartures(result.stationDepartures, location);
-                    if (stationDepartures == null) {
-                        stationDepartures = new StationDepartures(location, new ArrayList<Departure>(8), null);
-                        result.stationDepartures.add(stationDepartures);
+                        StationDepartures stationDepartures = findStationDepartures(result.stationDepartures, location);
+                        if (stationDepartures == null) {
+                            stationDepartures = new StationDepartures(location, new ArrayList<Departure>(8), null);
+                            result.stationDepartures.add(stationDepartures);
+                        }
+
+                        stationDepartures.departures.add(departure);
                     }
-
-                    stationDepartures.departures.add(departure);
                 }
             }
 
@@ -360,14 +367,21 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         }
     }
 
-    protected final SuggestLocationsResult jsonLocMatch(final CharSequence constraint, int maxLocations)
-            throws IOException {
+    protected final SuggestLocationsResult jsonLocMatch(final CharSequence constraint,
+            final @Nullable Set<LocationType> types, int maxLocations) throws IOException {
+        checkNotNull(constraint);
         if (maxLocations == 0)
             maxLocations = DEFAULT_MAX_LOCATIONS;
+        final String type;
+        if (types == null || types.contains(LocationType.ANY)
+                || types.containsAll(EnumSet.of(LocationType.STATION, LocationType.ADDRESS, LocationType.POI)))
+            type = "ALL";
+        else
+            type = Joiner.on("").skipNulls().join(types.contains(LocationType.STATION) ? "S" : null,
+                    types.contains(LocationType.ADDRESS) ? "A" : null, types.contains(LocationType.POI) ? "P" : null);
+        final String loc = "{\"name\":" + JSONObject.quote(constraint + "?") + ",\"type\":\"" + type + "\"}";
         final String request = wrapJsonApiRequest("LocMatch",
-                "{\"input\":{\"field\":\"S\",\"loc\":{\"name\":" + JSONObject.quote(checkNotNull(constraint).toString())
-                        + ",\"meta\":false},\"maxLoc\":" + maxLocations + "}}",
-                false);
+                "{\"input\":{\"field\":\"S\",\"loc\":" + loc + ",\"maxLoc\":" + maxLocations + "}}", false);
 
         final HttpUrl url = requestUrl(request);
         final CharSequence page = httpClient.get(url, request, "application/json");
@@ -388,9 +402,11 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
             checkState("LocMatch".equals(svcRes.getString("meth")));
             final String err = svcRes.getString("err");
             if (!"OK".equals(err)) {
-                final String errTxt = svcRes.getString("errTxt");
+                final String errTxt = svcRes.optString("errTxt");
                 log.debug("Hafas error: {} {}", err, errTxt);
                 if ("FAIL".equals(err) && "HCI Service: request failed".equals(errTxt))
+                    return new SuggestLocationsResult(header, SuggestLocationsResult.Status.SERVICE_DOWN);
+                if ("CGI_READ_FAILED".equals(err))
                     return new SuggestLocationsResult(header, SuggestLocationsResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + " " + errTxt);
             }
@@ -418,7 +434,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         if (location.hasId())
             return location;
         if (location.hasName()) {
-            final List<Location> locations = jsonLocMatch(JOINER.join(location.place, location.name), 1).getLocations();
+            final List<Location> locations = jsonLocMatch(JOINER.join(location.place, location.name), null, 1)
+                    .getLocations();
             if (!locations.isEmpty())
                 return locations.get(0);
         }
@@ -500,6 +517,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     return new QueryTripsResult(header, QueryTripsResult.Status.TOO_CLOSE);
                 if ("H9220".equals(err)) // Nearby to the given address stations could not be found.
                     return new QueryTripsResult(header, QueryTripsResult.Status.UNRESOLVABLE_ADDRESS);
+                if ("H887".equals(err)) // HAFAS Kernel: Kernel computation time limit reached.
+                    return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
                 if ("H9240".equals(err)) // HAFAS Kernel: Internal error.
                     return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
                 if ("H9360".equals(err)) // Date outside of the timetable period.
@@ -511,7 +530,9 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
                 if ("LOCATION".equals(err) && "HCI Service: location missing or invalid".equals(errTxt))
                     return new QueryTripsResult(header, QueryTripsResult.Status.UNKNOWN_LOCATION);
-                throw new RuntimeException(err + (errTxt != null ? " " + errTxt : ""));
+                if ("CGI_READ_FAILED".equals(err))
+                    return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
+                throw new RuntimeException(err + " " + errTxt);
             }
             final JSONObject res = svcRes.getJSONObject("res");
 
@@ -717,7 +738,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         final String err = serverInfo.optString("err", null);
         if (err != null && !"OK".equals(err)) {
             final String errTxt = serverInfo.optString("errTxt");
-            throw new RuntimeException(err + " " + errTxt);
+            log.info("ServerInfo error: {} {}, ignoring", err, errTxt);
+            return new ResultHeader(network, SERVER_PRODUCT, serverVersion, null, 0, null);
         }
         final JSONObject res = serverInfo.getJSONObject("res");
         final Calendar c = new GregorianCalendar(timeZone);
@@ -774,9 +796,10 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
 
         for (int i = 0; i < remList.length(); i++) {
             final JSONObject rem = remList.getJSONObject(i);
-            final String code = rem.getString("code");
-            final String txt = rem.getString("txtN");
-            remarks.add(new String[] { code, txt });
+            final String code = rem.optString("code", null);
+            final String txtS = rem.optString("txtS", null);
+            final String txtN = rem.optString("txtN", null);
+            remarks.add(new String[] { code, txtS != null ? txtS : txtN });
         }
 
         return remarks;
@@ -854,19 +877,42 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         for (int iProd = 0; iProd < prodListLen; iProd++) {
             final JSONObject prod = prodList.getJSONObject(iProd);
             final String name = Strings.emptyToNull(prod.getString("name"));
+            final String nameS = prod.optString("nameS", null);
             final String number = prod.optString("number", null);
             final int oprIndex = prod.optInt("oprX", -1);
             final String operator = oprIndex != -1 ? operators.get(oprIndex) : null;
             final int cls = prod.optInt("cls", -1);
             final Product product = cls != -1 ? intToProduct(cls) : null;
-            lines.add(newLine(operator, product, name, number));
+            lines.add(newLine(operator, product, name, nameS, number));
         }
 
         return lines;
     }
 
-    protected Line newLine(final String operator, final Product product, final String name, final String number) {
-        return new Line(null, operator, product, number, name, lineStyle(operator, product, number));
+    protected Line newLine(final String operator, final Product product, final @Nullable String name,
+            final @Nullable String shortName, final @Nullable String number) {
+        final String longName;
+        if (name != null)
+            longName = name + (number != null && !name.endsWith(number) ? " (" + number + ")" : "");
+        else if (shortName != null)
+            longName = shortName + (number != null && !shortName.endsWith(number) ? " (" + number + ")" : "");
+        else
+            longName = number;
+
+        if (product == Product.BUS || product == Product.TRAM) {
+            // For bus and tram, prefer a slightly shorter label without the product prefix
+            final String label;
+            if (shortName != null)
+                label = shortName;
+            else if (number != null && name != null && name.endsWith(number))
+                label = number;
+            else
+                label = name;
+            return new Line(null, operator, product, label, longName, lineStyle(operator, product, label));
+        } else {
+            // Otherwise the longer label is fine
+            return new Line(null, operator, product, name, longName, lineStyle(operator, product, name));
+        }
     }
 
     @SuppressWarnings("serial")
