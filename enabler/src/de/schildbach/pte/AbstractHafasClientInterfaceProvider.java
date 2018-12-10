@@ -434,16 +434,20 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         if (location.hasId())
             return location;
         if (location.hasName()) {
-            final List<Location> locations = jsonLocMatch(JOINER.join(location.place, location.name), null, 1)
-                    .getLocations();
-            if (!locations.isEmpty())
-                return locations.get(0);
+            final SuggestLocationsResult result = jsonLocMatch(JOINER.join(location.place, location.name), null, 1);
+            if (result.status == SuggestLocationsResult.Status.OK) {
+                final List<Location> locations = result.getLocations();
+                if (!locations.isEmpty())
+                    return locations.get(0);
+            }
         }
         if (location.hasCoord()) {
-            final List<Location> locations = jsonLocGeoPos(EnumSet.allOf(LocationType.class), location.coord, 0,
-                    1).locations;
-            if (!locations.isEmpty())
-                return locations.get(0);
+            final NearbyLocationsResult result = jsonLocGeoPos(EnumSet.allOf(LocationType.class), location.coord, 0, 1);
+            if (result.status == NearbyLocationsResult.Status.OK) {
+                final List<Location> locations = result.locations;
+                if (!locations.isEmpty())
+                    return locations.get(0);
+            }
         }
         return null;
     }
@@ -512,6 +516,9 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                 if ("H890".equals(err)) // No connections found.
                     return new QueryTripsResult(header, QueryTripsResult.Status.NO_TRIPS);
                 if ("H891".equals(err)) // No route found (try entering an intermediate station).
+                    return new QueryTripsResult(header, QueryTripsResult.Status.NO_TRIPS);
+                if ("H892".equals(err)) // HAFAS Kernel: Request too complex (try entering less intermediate
+                                        // stations).
                     return new QueryTripsResult(header, QueryTripsResult.Status.NO_TRIPS);
                 if ("H895".equals(err)) // Departure/Arrival are too near.
                     return new QueryTripsResult(header, QueryTripsResult.Status.TOO_CLOSE);
