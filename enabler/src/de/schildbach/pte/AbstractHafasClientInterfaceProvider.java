@@ -96,6 +96,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
     private byte[] requestMicMacSalt;
 
     private static final String SERVER_PRODUCT = "hci";
+    @SuppressWarnings("deprecation")
     private static final HashFunction MD5 = Hashing.md5();
     private static final BaseEncoding HEX = BaseEncoding.base16().lowerCase();
 
@@ -253,7 +254,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                 + "\"time\":\"" + jsonTime + "\"," //
                 + "\"stbLoc\":{\"type\":\"S\"," + "\"state\":\"F\"," // F/M
                 + "\"extId\":" + JSONObject.quote(normalizedStationId.toString()) + "}," //
-                + "\"stbFltrEquiv\":" + stbFltrEquiv + ",\"maxJny\":" + maxJny + "}", false);
+                + (apiVersion.compareToIgnoreCase("1.19") < 0 ? "\"stbFltrEquiv\":" + stbFltrEquiv + "," : "") //
+                + "\"maxJny\":" + maxJny + "}", false);
 
         final HttpUrl url = requestUrl(request);
         final CharSequence page = httpClient.get(url, request, "application/json");
