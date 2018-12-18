@@ -21,7 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Currency;
@@ -376,7 +376,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             public void onSuccessful(final CharSequence bodyPeek, final ResponseBody body) throws IOException {
                 try {
                     final XmlPullParser pp = parserFactory.newPullParser();
-                    pp.setInput(body.byteStream(), null); // Read encoding from XML declaration
+                    pp.setInput(body.charStream());
                     final ResultHeader header = enterEfa(pp);
                     XmlPullUtil.optSkip(pp, "ers");
 
@@ -407,7 +407,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
 
                             final String id = XmlPullUtil.valueTag(pp, "id");
                             XmlPullUtil.optValueTag(pp, "gid", null);
-                            XmlPullUtil.valueTag(pp, "stateless");
+                            final String stateless = XmlPullUtil.valueTag(pp, "stateless");
                             XmlPullUtil.valueTag(pp, "omc");
                             final String place = normalizeLocationName(XmlPullUtil.optValueTag(pp, "pc", null));
                             XmlPullUtil.valueTag(pp, "pid");
@@ -420,7 +420,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
 
                             XmlPullUtil.skipExit(pp, "p");
 
-                            final Location location = new Location(type, type == LocationType.STATION ? id : null,
+                            final Location location = new Location(type, type == LocationType.STATION ? id : stateless,
                                     coord, place, name);
                             final SuggestedLocation locationAndQuality = new SuggestedLocation(location, quality);
                             locations.add(locationAndQuality);
@@ -475,7 +475,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             public void onSuccessful(final CharSequence bodyPeek, final ResponseBody body) throws IOException {
                 try {
                     final XmlPullParser pp = parserFactory.newPullParser();
-                    pp.setInput(body.byteStream(), null); // Read encoding from XML declaration
+                    pp.setInput(body.charStream());
                     final ResultHeader header = enterItdRequest(pp);
 
                     XmlPullUtil.enter(pp, "itdCoordInfoRequest");
@@ -543,7 +543,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             public void onSuccessful(final CharSequence bodyPeek, final ResponseBody body) throws IOException {
                 try {
                     final XmlPullParser pp = parserFactory.newPullParser();
-                    pp.setInput(body.byteStream(), null); // Read encoding from XML declaration
+                    pp.setInput(body.charStream());
                     final ResultHeader header = enterEfa(pp);
 
                     XmlPullUtil.enter(pp, "ci");
@@ -572,14 +572,15 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                             XmlPullUtil.valueTag(pp, "layer");
                             XmlPullUtil.valueTag(pp, "gisID");
                             XmlPullUtil.valueTag(pp, "ds");
-                            XmlPullUtil.valueTag(pp, "stateless");
+                            final String stateless = XmlPullUtil.valueTag(pp, "stateless");
+                            final String locationId = locationType == LocationType.STATION ? id : stateless;
                             final Point coord = parseCoord(XmlPullUtil.valueTag(pp, "c"));
 
                             final Location location;
                             if (name != null)
-                                location = new Location(locationType, id, coord, place, name);
+                                location = new Location(locationType, locationId, coord, place, name);
                             else
-                                location = new Location(locationType, id, coord, null, place);
+                                location = new Location(locationType, locationId, coord, null, place);
                             stations.add(location);
 
                             XmlPullUtil.skipExit(pp, "pi");
@@ -825,7 +826,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             public void onSuccessful(final CharSequence bodyPeek, final ResponseBody body) throws IOException {
                 try {
                     final XmlPullParser pp = parserFactory.newPullParser();
-                    pp.setInput(body.byteStream(), null); // Read encoding from XML declaration
+                    pp.setInput(body.charStream());
                     final ResultHeader header = enterItdRequest(pp);
 
                     XmlPullUtil.enter(pp, "itdDepartureMonitorRequest");
@@ -1377,6 +1378,9 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
         } else if ("17".equals(mot)) {
             if (trainNum == null && trainName != null && trainName.startsWith("Schienenersatz"))
                 return new Line(id, network, Product.BUS, "SEV");
+        } else if ("19".equals(mot)) {
+            if ("Bürgerbus".equals(trainName) || "BürgerBus".equals(trainName))
+                return new Line(id, network, Product.BUS, symbol);
         }
 
         throw new IllegalStateException(
@@ -1434,7 +1438,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             public void onSuccessful(final CharSequence bodyPeek, final ResponseBody body) throws IOException {
                 try {
                     final XmlPullParser pp = parserFactory.newPullParser();
-                    pp.setInput(body.byteStream(), null); // Read encoding from XML declaration
+                    pp.setInput(body.charStream());
                     final ResultHeader header = enterItdRequest(pp);
 
                     final QueryDeparturesResult r = new QueryDeparturesResult(header);
@@ -1452,7 +1456,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                         }
                     });
 
-                    if ("notidentified".equals(nameState) || "list".equals(nameState)) {
+                    if (!"identified".equals(nameState)) {
                         result.set(new QueryDeparturesResult(header, QueryDeparturesResult.Status.INVALID_STATION));
                         return;
                     }
@@ -1582,7 +1586,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             public void onSuccessful(final CharSequence bodyPeek, final ResponseBody body) throws IOException {
                 try {
                     final XmlPullParser pp = parserFactory.newPullParser();
-                    pp.setInput(body.byteStream(), null); // Read encoding from XML declaration
+                    pp.setInput(body.charStream());
                     final ResultHeader header = enterEfa(pp);
                     final QueryDeparturesResult r = new QueryDeparturesResult(header);
 
@@ -2038,7 +2042,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             @Override
             public void onSuccessful(final CharSequence bodyPeek, final ResponseBody body) throws IOException {
                 try {
-                    result.set(queryTrips(url.build(), body.byteStream()));
+                    result.set(queryTrips(url.build(), body.charStream()));
                 } catch (final XmlPullParserException x) {
                     throw new ParserException("cannot parse xml: " + bodyPeek, x);
                 } catch (final RuntimeException x) {
@@ -2062,7 +2066,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             @Override
             public void onSuccessful(final CharSequence bodyPeek, final ResponseBody body) throws IOException {
                 try {
-                    result.set(queryTripsMobile(url.build(), from, via, to, body.byteStream()));
+                    result.set(queryTripsMobile(url.build(), from, via, to, body.charStream()));
                 } catch (final XmlPullParserException x) {
                     throw new ParserException("cannot parse xml: " + bodyPeek, x);
                 } catch (final RuntimeException x) {
@@ -2089,7 +2093,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             @Override
             public void onSuccessful(final CharSequence bodyPeek, final ResponseBody body) throws IOException {
                 try {
-                    result.set(queryTrips(url.build(), body.byteStream()));
+                    result.set(queryTrips(url.build(), body.charStream()));
                 } catch (final XmlPullParserException x) {
                     throw new ParserException("cannot parse xml: " + bodyPeek, x);
                 } catch (final RuntimeException x) {
@@ -2116,7 +2120,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             @Override
             public void onSuccessful(final CharSequence bodyPeek, final ResponseBody body) throws IOException {
                 try {
-                    result.set(queryTripsMobile(url.build(), null, null, null, body.byteStream()));
+                    result.set(queryTripsMobile(url.build(), null, null, null, body.charStream()));
                 } catch (final XmlPullParserException x) {
                     throw new ParserException("cannot parse xml: " + bodyPeek, x);
                 } catch (final RuntimeException x) {
@@ -2130,10 +2134,10 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
         return result.get();
     }
 
-    private QueryTripsResult queryTrips(final HttpUrl url, final InputStream is)
+    private QueryTripsResult queryTrips(final HttpUrl url, final Reader reader)
             throws XmlPullParserException, IOException {
         final XmlPullParser pp = parserFactory.newPullParser();
-        pp.setInput(is, null); // Read encoding from XML declaration
+        pp.setInput(reader);
         final ResultHeader header = enterItdRequest(pp);
         final Object context = header.context;
 
@@ -2619,9 +2623,9 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
     }
 
     private QueryTripsResult queryTripsMobile(final HttpUrl url, final Location from, final @Nullable Location via,
-            final Location to, final InputStream is) throws XmlPullParserException, IOException {
+            final Location to, final Reader reader) throws XmlPullParserException, IOException {
         final XmlPullParser pp = parserFactory.newPullParser();
-        pp.setInput(is, null); // Read encoding from XML declaration
+        pp.setInput(reader);
         final ResultHeader header = enterEfa(pp);
 
         final Calendar plannedTimeCal = new GregorianCalendar(timeZone);

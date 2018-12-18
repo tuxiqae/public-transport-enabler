@@ -283,6 +283,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     return new QueryDeparturesResult(header, QueryDeparturesResult.Status.INVALID_STATION);
                 if ("FAIL".equals(err) && "HCI Service: request failed".equals(errTxt))
                     return new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN);
+                if ("PROBLEMS".equals(err) && "HCI Service: problems during service execution".equals(errTxt))
+                    return new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN);
                 if ("CGI_READ_FAILED".equals(err))
                     return new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + " " + errTxt);
@@ -300,6 +302,10 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                 for (int iJny = 0; iJny < jnyList.length(); iJny++) {
                     final JSONObject jny = jnyList.getJSONObject(iJny);
                     final JSONObject stbStop = jny.getJSONObject("stbStop");
+
+                    final boolean cancelled = stbStop.optBoolean("dCncl", false);
+                    if (cancelled)
+                        continue;
 
                     final String stbStopPlatformS = stbStop.optString("dPlatfS", null);
                     c.clear();
@@ -539,6 +545,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                                          // than once.
                     return new QueryTripsResult(header, QueryTripsResult.Status.TOO_CLOSE);
                 if ("FAIL".equals(err) && "HCI Service: request failed".equals(errTxt))
+                    return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
+                if ("PROBLEMS".equals(err) && "HCI Service: problems during service execution".equals(errTxt))
                     return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
                 if ("LOCATION".equals(err) && "HCI Service: location missing or invalid".equals(errTxt))
                     return new QueryTripsResult(header, QueryTripsResult.Status.UNKNOWN_LOCATION);
