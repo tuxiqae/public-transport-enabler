@@ -2399,6 +2399,8 @@ public abstract class AbstractHafasLegacyProvider extends AbstractHafasProvider 
         // Intercity
         if ("EC".equals(ucType)) // EuroCity
             return Product.HIGH_SPEED_TRAIN;
+        if ("ECE".equals(ucType)) // EuroCity-Express
+            return Product.HIGH_SPEED_TRAIN;
         if ("EN".equals(ucType)) // EuroNight
             return Product.HIGH_SPEED_TRAIN;
         if ("D".equals(ucType)) // EuroNight, Sitzwagenabteil
@@ -2504,6 +2506,14 @@ public abstract class AbstractHafasLegacyProvider extends AbstractHafasProvider 
         if ("NJ".equals(ucType)) // NightJet
             return Product.HIGH_SPEED_TRAIN;
         if ("FLX".equals(ucType))
+            return Product.HIGH_SPEED_TRAIN;
+        if ("RJX".equals(ucType)) // railjet xpress
+            return Product.HIGH_SPEED_TRAIN;
+        if ("ICL".equals(ucType)) // InterCity Lyn, Denmark
+            return Product.HIGH_SPEED_TRAIN;
+        if ("FR".equals(ucType)) // Frecciarossa, Italy
+            return Product.HIGH_SPEED_TRAIN;
+        if ("FA".equals(ucType)) // Frecciargento, Italy
             return Product.HIGH_SPEED_TRAIN;
 
         // Regional
@@ -2944,7 +2954,7 @@ public abstract class AbstractHafasLegacyProvider extends AbstractHafasProvider 
     private static final Pattern P_LINE_NUMBER = Pattern.compile("\\d{2,5}");
     private static final Pattern P_LINE_SUBWAY = Pattern.compile("U\\d{1,2}");
     private static final Pattern P_LINE_RUSSIA = Pattern.compile(
-            "\\d{3}(?:AJ|BJ|CJ|DJ|EJ|FJ|GJ|IJ|KJ|LJ|NJ|MJ|OJ|RJ|SJ|TJ|UJ|VJ|ZJ|CH|KH|ZH|EI|JA|JI|MZ|SH|SZ|PC|Y)");
+            "\\d{3}(?:AJ|BJ|CJ|DJ|EJ|FJ|GJ|IJ|KJ|LJ|NJ|MJ|OJ|RJ|SJ|TJ|UJ|VJ|ZJ|CH|KH|ZH|EI|JA|JI|MZ|SH|SZ|PC|Y|YJ)");
 
     protected Line parseLineAndType(final String lineAndType) {
         final Matcher mLineAndType = P_NORMALIZE_LINE_AND_TYPE.matcher(lineAndType);
