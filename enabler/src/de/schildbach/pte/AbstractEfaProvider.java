@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Currency;
 import java.util.Date;
-import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -444,7 +443,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
         return result.get();
     }
 
-    private void appendCoordRequestParameters(final HttpUrl.Builder url, final EnumSet<LocationType> types,
+    private void appendCoordRequestParameters(final HttpUrl.Builder url, final Set<LocationType> types,
             final Point coord, final int maxDistance, final int maxLocations) {
         appendCommonRequestParams(url, "XML");
         url.addEncodedQueryParameter("coord", ParserUtils.urlEncode(String.format(Locale.ENGLISH, "%.7f:%.7f:%s",
@@ -465,7 +464,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
         }
     }
 
-    protected NearbyLocationsResult xmlCoordRequest(final EnumSet<LocationType> types, final Point coord,
+    protected NearbyLocationsResult xmlCoordRequest(final Set<LocationType> types, final Point coord,
             final int maxDistance, final int maxStations) throws IOException {
         final HttpUrl.Builder url = coordEndpoint.newBuilder();
         appendCoordRequestParameters(url, types, coord, maxDistance, maxStations);
@@ -533,7 +532,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
         return result.get();
     }
 
-    protected NearbyLocationsResult mobileCoordRequest(final EnumSet<LocationType> types, final Point coord,
+    protected NearbyLocationsResult mobileCoordRequest(final Set<LocationType> types, final Point coord,
             final int maxDistance, final int maxStations) throws IOException {
         final HttpUrl.Builder url = coordEndpoint.newBuilder();
         appendCoordRequestParameters(url, types, coord, maxDistance, maxStations);
@@ -704,7 +703,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
 
         if ("any".equals(type))
             type = XmlPullUtil.attr(pp, "anyType");
-        final String id = XmlPullUtil.attr(pp, "stateless");
+        final String id = XmlPullUtil.optAttr(pp, "id", null);
+        final String stateless = XmlPullUtil.attr(pp, "stateless");
         final String locality = normalizeLocationName(XmlPullUtil.optAttr(pp, "locality", null));
         final String objectName = normalizeLocationName(XmlPullUtil.optAttr(pp, "objectName", null));
         final String buildingName = XmlPullUtil.optAttr(pp, "buildingName", null);
@@ -724,59 +724,41 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
         }
         XmlPullUtil.exit(pp, "odvNameElem");
 
-        final LocationType locationType;
-        final String place;
-        final String name;
-
         if ("stop".equals(type)) {
-            locationType = LocationType.STATION;
-            place = locality != null ? locality : defaultPlace;
-            name = objectName != null ? objectName : nameElem;
+            if (id != null && !stateless.startsWith(id))
+                throw new RuntimeException("id mismatch: '" + id + "' vs '" + stateless + "'");
+            return new Location(LocationType.STATION, id != null ? id : stateless, coord,
+                    locality != null ? locality : defaultPlace, objectName != null ? objectName : nameElem);
         } else if ("poi".equals(type)) {
-            locationType = LocationType.POI;
-            place = locality != null ? locality : defaultPlace;
-            name = objectName != null ? objectName : nameElem;
+            return new Location(LocationType.POI, stateless, coord, locality != null ? locality : defaultPlace,
+                    objectName != null ? objectName : nameElem);
         } else if ("loc".equals(type)) {
             if (locality != null) {
-                locationType = LocationType.ADDRESS;
-                place = null;
-                name = locality;
+                return new Location(LocationType.ADDRESS, stateless, coord, null, locality);
             } else if (nameElem != null) {
-                locationType = LocationType.ADDRESS;
-                place = null;
-                name = nameElem;
+                return new Location(LocationType.ADDRESS, stateless, coord, null, nameElem);
             } else if (coord != null) {
-                locationType = LocationType.COORD;
-                place = null;
-                name = null;
+                return new Location(LocationType.COORD, stateless, coord, null, null);
             } else {
                 throw new IllegalArgumentException("not enough data for type/anyType: " + type);
             }
         } else if ("address".equals(type) || "singlehouse".equals(type)) {
-            locationType = LocationType.ADDRESS;
-            place = locality != null ? locality : defaultPlace;
-            name = objectName + (buildingNumber != null ? " " + buildingNumber : "");
+            return new Location(LocationType.ADDRESS, stateless, coord, locality != null ? locality : defaultPlace,
+                    objectName + (buildingNumber != null ? " " + buildingNumber : ""));
         } else if ("street".equals(type) || "crossing".equals(type)) {
-            locationType = LocationType.ADDRESS;
-            place = locality != null ? locality : defaultPlace;
-            name = objectName != null ? objectName : nameElem;
+            return new Location(LocationType.ADDRESS, stateless, coord, locality != null ? locality : defaultPlace,
+                    objectName != null ? objectName : nameElem);
         } else if ("postcode".equals(type)) {
-            locationType = LocationType.ADDRESS;
-            place = locality != null ? locality : defaultPlace;
-            name = postCode;
+            return new Location(LocationType.ADDRESS, stateless, coord, locality != null ? locality : defaultPlace,
+                    postCode);
         } else if ("buildingname".equals(type)) {
-            locationType = LocationType.ADDRESS;
-            place = locality != null ? locality : defaultPlace;
-            name = buildingName != null ? buildingName : streetName;
+            return new Location(LocationType.ADDRESS, stateless, coord, locality != null ? locality : defaultPlace,
+                    buildingName != null ? buildingName : streetName);
         } else if ("coord".equals(type)) {
-            locationType = LocationType.ADDRESS;
-            place = defaultPlace;
-            name = nameElem;
+            return new Location(LocationType.ADDRESS, stateless, coord, defaultPlace, nameElem);
         } else {
             throw new IllegalArgumentException("unknown type/anyType: " + type);
         }
-
-        return new Location(locationType, id, coord, place, name);
     }
 
     private Location processItdOdvAssignedStop(final XmlPullParser pp) throws XmlPullParserException, IOException {
@@ -792,7 +774,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
     }
 
     @Override
-    public NearbyLocationsResult queryNearbyLocations(final EnumSet<LocationType> types, final Location location,
+    public NearbyLocationsResult queryNearbyLocations(final Set<LocationType> types, final Location location,
             final int maxDistance, final int maxLocations) throws IOException {
         if (location.hasCoord())
             return xmlCoordRequest(types, location.coord, maxDistance, maxLocations);
@@ -2979,6 +2961,9 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                     ParserUtils.urlEncode(normalizeStationId(location.id), requestUrlEncoding));
         } else if (location.type == LocationType.POI && location.hasId()) {
             url.addEncodedQueryParameter("type_" + paramSuffix, "poi");
+            url.addEncodedQueryParameter("name_" + paramSuffix, ParserUtils.urlEncode(location.id, requestUrlEncoding));
+        } else if (location.type == LocationType.ADDRESS && location.hasId()) {
+            url.addEncodedQueryParameter("type_" + paramSuffix, "address");
             url.addEncodedQueryParameter("name_" + paramSuffix, ParserUtils.urlEncode(location.id, requestUrlEncoding));
         } else if ((location.type == LocationType.ADDRESS || location.type == LocationType.COORD)
                 && location.hasCoord()) {
