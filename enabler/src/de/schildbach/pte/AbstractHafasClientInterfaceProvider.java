@@ -87,6 +87,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
     @Nullable
     private String apiVersion;
     @Nullable
+    private String apiExt;
+    @Nullable
     private String apiAuthorization;
     @Nullable
     private String apiClient;
@@ -114,6 +116,11 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
     protected AbstractHafasClientInterfaceProvider setApiVersion(final String apiVersion) {
         checkArgument(apiVersion.compareToIgnoreCase("1.11") >= 0, "apiVersion must be 1.11 or higher");
         this.apiVersion = apiVersion;
+        return this;
+    }
+
+    protected AbstractHafasClientInterfaceProvider setApiExt(final String apiExt) {
+        this.apiExt = checkNotNull(apiExt);
         return this;
     }
 
@@ -626,6 +633,10 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
 
                         leg = new Trip.Public(line, destination, departureStop, arrivalStop, intermediateStops, null,
                                 message);
+                    } else if ("DEVI".equals(secType)) {
+                        leg = new Trip.Individual(Trip.Individual.Type.TRANSFER, departureStop.location,
+                                departureStop.getDepartureTime(), arrivalStop.location, arrivalStop.getArrivalTime(),
+                                null, 0);
                     } else if ("WALK".equals(secType) || "TRSF".equals(secType)) {
                         final JSONObject gis = sec.getJSONObject("gis");
                         final int distance = gis.optInt("dist", 0);
@@ -704,6 +715,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         return "{" //
                 + (apiAuthorization != null ? "\"auth\":" + apiAuthorization + "," : "") //
                 + "\"client\":" + checkNotNull(apiClient) + "," //
+                + (apiExt != null ? "\"ext\":\"" + apiExt + "\"," : "") //
                 + "\"ver\":\"" + checkNotNull(apiVersion) + "\",\"lang\":\"eng\"," //
                 + "\"svcReqL\":[" //
                 + "{\"meth\":\"ServerInfo\",\"req\":{\"getServerDateTime\":true,\"getTimeTablePeriod\":false}}," //
