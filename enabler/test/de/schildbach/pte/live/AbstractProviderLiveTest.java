@@ -115,7 +115,7 @@ public abstract class AbstractProviderLiveTest {
     }
 
     protected final SuggestLocationsResult suggestLocations(final CharSequence constraint) throws IOException {
-        return provider.suggestLocations(constraint);
+        return provider.suggestLocations(constraint, null, 0);
     }
 
     protected final QueryTripsResult queryTrips(final Location from, final @Nullable Location via, final Location to,

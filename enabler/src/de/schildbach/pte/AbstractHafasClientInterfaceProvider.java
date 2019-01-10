@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -39,6 +40,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -67,12 +71,14 @@ import de.schildbach.pte.dto.QueryTripsResult;
 import de.schildbach.pte.dto.ResultHeader;
 import de.schildbach.pte.dto.StationDepartures;
 import de.schildbach.pte.dto.Stop;
+import de.schildbach.pte.dto.Style;
 import de.schildbach.pte.dto.SuggestLocationsResult;
 import de.schildbach.pte.dto.SuggestedLocation;
 import de.schildbach.pte.dto.Trip;
 import de.schildbach.pte.dto.TripOptions;
 import de.schildbach.pte.exception.ParserException;
 import de.schildbach.pte.util.ParserUtils;
+import de.schildbach.pte.util.PolylineFormat;
 
 import okhttp3.HttpUrl;
 
@@ -108,15 +114,27 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         this.apiBase = checkNotNull(apiBase);
     }
 
+    public HttpUrl getApiBase() {
+        return apiBase;
+    }
+
     protected AbstractHafasClientInterfaceProvider setApiEndpoint(final String apiEndpoint) {
         this.apiEndpoint = checkNotNull(apiEndpoint);
         return this;
     }
 
+    public String getApiEndpoint() {
+        return apiEndpoint;
+    }
+
     protected AbstractHafasClientInterfaceProvider setApiVersion(final String apiVersion) {
-        checkArgument(apiVersion.compareToIgnoreCase("1.11") >= 0, "apiVersion must be 1.11 or higher");
+        checkArgument(apiVersion.compareToIgnoreCase("1.14") >= 0, "apiVersion must be 1.14 or higher");
         this.apiVersion = apiVersion;
         return this;
+    }
+
+    public String getApiVersion() {
+        return apiVersion;
     }
 
     protected AbstractHafasClientInterfaceProvider setApiExt(final String apiExt) {
@@ -124,9 +142,17 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         return this;
     }
 
+    public String getApiExt() {
+        return apiExt;
+    }
+
     protected AbstractHafasClientInterfaceProvider setApiAuthorization(final String apiAuthorization) {
         this.apiAuthorization = apiAuthorization;
         return this;
+    }
+
+    public String getApiAuthorization() {
+        return apiAuthorization;
     }
 
     protected AbstractHafasClientInterfaceProvider setApiClient(final String apiClient) {
@@ -134,14 +160,26 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         return this;
     }
 
+    public String getApiClient() {
+        return apiClient;
+    }
+
     protected AbstractHafasClientInterfaceProvider setRequestChecksumSalt(final byte[] requestChecksumSalt) {
         this.requestChecksumSalt = requestChecksumSalt;
         return this;
     }
 
+    public byte[] getRequestChecksumSalt() {
+        return requestChecksumSalt;
+    }
+
     protected AbstractHafasClientInterfaceProvider setRequestMicMacSalt(final byte[] requestMicMacSalt) {
         this.requestMicMacSalt = requestMicMacSalt;
         return this;
+    }
+
+    public byte[] getRequestMicMacSalt() {
+        return requestMicMacSalt;
     }
 
     @Override
@@ -160,8 +198,9 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
     }
 
     @Override
-    public SuggestLocationsResult suggestLocations(final CharSequence constraint) throws IOException {
-        return jsonLocMatch(constraint, null, 0);
+    public SuggestLocationsResult suggestLocations(final CharSequence constraint,
+            final @Nullable Set<LocationType> types, final int maxLocations) throws IOException {
+        return jsonLocMatch(constraint, types, maxLocations);
     }
 
     @Override
@@ -219,17 +258,20 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     return new NearbyLocationsResult(header, NearbyLocationsResult.Status.SERVICE_DOWN);
                 if ("CGI_READ_FAILED".equals(err))
                     return new NearbyLocationsResult(header, NearbyLocationsResult.Status.SERVICE_DOWN);
+                if ("CGI_NO_SERVER".equals(err))
+                    return new NearbyLocationsResult(header, NearbyLocationsResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + " " + errTxt);
             }
             final JSONObject res = svcRes.getJSONObject("res");
 
             final JSONObject common = res.getJSONObject("common");
             /* final List<String[]> remarks = */ parseRemList(common.getJSONArray("remL"));
+            final JSONArray crdSysList = common.optJSONArray("crdSysL");
 
             final JSONArray locL = res.optJSONArray("locL");
             final List<Location> locations;
             if (locL != null) {
-                locations = parseLocList(locL);
+                locations = parseLocList(locL, crdSysList);
 
                 // filter unwanted location types
                 for (Iterator<Location> i = locations.iterator(); i.hasNext();) {
@@ -294,14 +336,18 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     return new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN);
                 if ("CGI_READ_FAILED".equals(err))
                     return new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN);
+                if ("CGI_NO_SERVER".equals(err))
+                    return new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + " " + errTxt);
             }
             final JSONObject res = svcRes.getJSONObject("res");
 
             final JSONObject common = res.getJSONObject("common");
             final List<String[]> remarks = parseRemList(common.getJSONArray("remL"));
+            final List<Style> styles = parseIcoList(common.getJSONArray("icoL"));
             final List<String> operators = parseOpList(common.getJSONArray("opL"));
-            final List<Line> lines = parseProdList(common.getJSONArray("prodL"), operators);
+            final List<Line> lines = parseProdList(common.getJSONArray("prodL"), operators, styles);
+            final JSONArray crdSysList = common.optJSONArray("crdSysL");
             final JSONArray locList = common.getJSONArray("locL");
 
             final JSONArray jnyList = res.optJSONArray("jnyL");
@@ -314,7 +360,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     if (cancelled)
                         continue;
 
-                    final String stbStopPlatformS = stbStop.optString("dPlatfS", null);
+                    final Position position = parseJsonPosition(stbStop, "dPlatfS", "dPltfS");
+
                     c.clear();
                     ParserUtils.parseIsoDate(c, jny.getString("date"));
                     final Date baseDate = c.getTime();
@@ -326,9 +373,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     final int dProdX = stbStop.optInt("dProdX", -1);
                     final Line line = dProdX != -1 ? lines.get(dProdX) : null;
 
-                    final Location location = equivs ? parseLoc(locList, stbStop.getInt("locX"), null)
+                    final Location location = equivs ? parseLoc(locList, stbStop.getInt("locX"), null, crdSysList)
                             : new Location(LocationType.STATION, stationId);
-                    final Position position = normalizePosition(stbStopPlatformS);
 
                     final String jnyDirTxt = jny.getString("dirTxt");
                     Location destination = null;
@@ -338,7 +384,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                         final int lastStopIdx = stopList.getJSONObject(stopList.length() - 1).getInt("locX");
                         final String lastStopName = locList.getJSONObject(lastStopIdx).getString("name");
                         if (jnyDirTxt.equals(lastStopName))
-                            destination = parseLoc(locList, lastStopIdx, null);
+                            destination = parseLoc(locList, lastStopIdx, null, crdSysList);
                     }
                     // otherwise split unidentified destination as if it was a station and use it
                     if (destination == null) {
@@ -423,6 +469,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     return new SuggestLocationsResult(header, SuggestLocationsResult.Status.SERVICE_DOWN);
                 if ("CGI_READ_FAILED".equals(err))
                     return new SuggestLocationsResult(header, SuggestLocationsResult.Status.SERVICE_DOWN);
+                if ("CGI_NO_SERVER".equals(err))
+                    return new SuggestLocationsResult(header, SuggestLocationsResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + " " + errTxt);
             }
             final JSONObject res = svcRes.getJSONObject("res");
@@ -431,7 +479,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
             /* final List<String[]> remarks = */ parseRemList(common.getJSONArray("remL"));
 
             final JSONObject match = res.getJSONObject("match");
-            final List<Location> locations = parseLocList(match.optJSONArray("locL"));
+            final JSONArray crdSysList = common.optJSONArray("crdSysL");
+            final List<Location> locations = parseLocList(match.optJSONArray("locL"), crdSysList);
             final List<SuggestedLocation> suggestedLocations = new ArrayList<>(locations.size());
             for (final Location location : locations)
                 suggestedLocations.add(new SuggestedLocation(location));
@@ -504,7 +553,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                         ? "\"jnyFltrL\":[{\"value\":\"" + jnyFltr + "\",\"mode\":\"BIT\",\"type\":\"PROD\"}]," : "") //
                 + "\"gisFltrL\":[{\"mode\":\"FB\",\"profile\":{\"type\":\"F\",\"linDistRouting\":false,\"maxdist\":2000},\"type\":\"M\",\"meta\":\""
                 + meta + "\"}]," //
-                + "\"getPolyline\":false,\"getPasslist\":true,\"getIST\":false,\"getEco\":false,\"extChgTime\":-1}", //
+                + "\"getPolyline\":true,\"getPasslist\":true,\"getIST\":false,\"getEco\":false,\"extChgTime\":-1}", //
                 false);
 
         final HttpUrl url = requestUrl(request);
@@ -559,22 +608,28 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     return new QueryTripsResult(header, QueryTripsResult.Status.UNKNOWN_LOCATION);
                 if ("CGI_READ_FAILED".equals(err))
                     return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
+                if ("CGI_NO_SERVER".equals(err))
+                    return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + " " + errTxt);
             }
             final JSONObject res = svcRes.getJSONObject("res");
 
             final JSONObject common = res.getJSONObject("common");
             final List<String[]> remarks = parseRemList(common.getJSONArray("remL"));
+            final List<Style> styles = parseIcoList(common.getJSONArray("icoL"));
+            final JSONArray crdSysList = common.optJSONArray("crdSysL");
             final JSONArray locList = common.getJSONArray("locL");
             final List<String> operators = parseOpList(common.getJSONArray("opL"));
-            final List<Line> lines = parseProdList(common.getJSONArray("prodL"), operators);
+            final List<Line> lines = parseProdList(common.getJSONArray("prodL"), operators, styles);
+            final List<String> encodedPolylines = parsePolyList(common.getJSONArray("polyL"));
 
             final JSONArray outConList = res.optJSONArray("outConL");
             final List<Trip> trips = new ArrayList<>(outConList.length());
             for (int iOutCon = 0; iOutCon < outConList.length(); iOutCon++) {
                 final JSONObject outCon = outConList.getJSONObject(iOutCon);
-                final Location tripFrom = parseLoc(locList, outCon.getJSONObject("dep").getInt("locX"), null);
-                final Location tripTo = parseLoc(locList, outCon.getJSONObject("arr").getInt("locX"), null);
+                final Location tripFrom = parseLoc(locList, outCon.getJSONObject("dep").getInt("locX"), null,
+                        crdSysList);
+                final Location tripTo = parseLoc(locList, outCon.getJSONObject("arr").getInt("locX"), null, crdSysList);
 
                 c.clear();
                 ParserUtils.parseIsoDate(c, outCon.getString("date"));
@@ -587,10 +642,10 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     final String secType = sec.getString("type");
 
                     final JSONObject secDep = sec.getJSONObject("dep");
-                    final Stop departureStop = parseJsonStop(secDep, locList, c, baseDate);
+                    final Stop departureStop = parseJsonStop(secDep, locList, crdSysList, c, baseDate);
 
                     final JSONObject secArr = sec.getJSONObject("arr");
-                    final Stop arrivalStop = parseJsonStop(secArr, locList, c, baseDate);
+                    final Stop arrivalStop = parseJsonStop(secArr, locList, crdSysList, c, baseDate);
 
                     final Trip.Leg leg;
                     if ("JNY".equals(secType)) {
@@ -613,11 +668,32 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                             intermediateStops = new ArrayList<>(stopList.length());
                             for (int iStop = 1; iStop < stopList.length() - 1; iStop++) {
                                 final JSONObject stop = stopList.getJSONObject(iStop);
-                                final Stop intermediateStop = parseJsonStop(stop, locList, c, baseDate);
+                                final Stop intermediateStop = parseJsonStop(stop, locList, crdSysList, c, baseDate);
                                 intermediateStops.add(intermediateStop);
                             }
                         } else {
                             intermediateStops = null;
+                        }
+
+                        final List<Point> path;
+                        final JSONObject polyG = jny.optJSONObject("polyG");
+                        if (polyG != null) {
+                            final int crdSysX = polyG.optInt("crdSysX", -1);
+                            if (crdSysX != -1) {
+                                final String crdSysType = crdSysList.getJSONObject(crdSysX).getString("type");
+                                if (!"WGS84".equals(crdSysType))
+                                    throw new RuntimeException("unknown type: " + crdSysType);
+                            }
+                            final JSONArray polyXList = polyG.getJSONArray("polyXL");
+                            path = new LinkedList<>();
+                            final int polyXListLen = polyXList.length();
+                            checkState(polyXListLen <= 1);
+                            for (int i = 0; i < polyXListLen; i++) {
+                                final String encodedPolyline = encodedPolylines.get(polyXList.getInt(i));
+                                path.addAll(PolylineFormat.decode(encodedPolyline));
+                            }
+                        } else {
+                            path = null;
                         }
 
                         final JSONArray remList = jny.optJSONArray("remL");
@@ -631,7 +707,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                             }
                         }
 
-                        leg = new Trip.Public(line, destination, departureStop, arrivalStop, intermediateStops, null,
+                        leg = new Trip.Public(line, destination, departureStop, arrivalStop, intermediateStops, path,
                                 message);
                     } else if ("DEVI".equals(secType)) {
                         leg = new Trip.Individual(Trip.Individual.Type.TRANSFER, departureStop.location,
@@ -802,21 +878,32 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         throw new RuntimeException("cannot parse: '" + str + "'");
     }
 
-    private Stop parseJsonStop(final JSONObject json, final JSONArray locList, final Calendar c, final Date baseDate)
+    private Position parseJsonPosition(final JSONObject json, final String platfName, final String pltfName)
             throws JSONException {
-        final Location location = parseLoc(locList, json.getInt("locX"), null);
+        final JSONObject pltf = json.optJSONObject(pltfName);
+        if (pltf != null)
+            return new Position(pltf.getString("txt")); // TODO type
+        final String platf = json.optString(platfName, null);
+        if (platf != null)
+            return normalizePosition(platf);
+        return null;
+    }
+
+    private Stop parseJsonStop(final JSONObject json, final JSONArray locList, final JSONArray crdSysList,
+            final Calendar c, final Date baseDate) throws JSONException {
+        final Location location = parseLoc(locList, json.getInt("locX"), null, crdSysList);
 
         final boolean arrivalCancelled = json.optBoolean("aCncl", false);
         final Date plannedArrivalTime = parseJsonTime(c, baseDate, json.optString("aTimeS", null));
         final Date predictedArrivalTime = parseJsonTime(c, baseDate, json.optString("aTimeR", null));
-        final Position plannedArrivalPosition = normalizePosition(json.optString("aPlatfS", null));
-        final Position predictedArrivalPosition = normalizePosition(json.optString("aPlatfR", null));
+        final Position plannedArrivalPosition = parseJsonPosition(json, "aPlatfS", "aPltfS");
+        final Position predictedArrivalPosition = parseJsonPosition(json, "aPlatfR", "aPltfR");
 
         final boolean departureCancelled = json.optBoolean("dCncl", false);
         final Date plannedDepartureTime = parseJsonTime(c, baseDate, json.optString("dTimeS", null));
         final Date predictedDepartureTime = parseJsonTime(c, baseDate, json.optString("dTimeR", null));
-        final Position plannedDeparturePosition = normalizePosition(json.optString("dPlatfS", null));
-        final Position predictedDeparturePosition = normalizePosition(json.optString("dPlatfR", null));
+        final Position plannedDeparturePosition = parseJsonPosition(json, "dPlatfS", "dPltfS");
+        final Position predictedDeparturePosition = parseJsonPosition(json, "dPlatfR", "dPltfR");
 
         return new Stop(location, plannedArrivalTime, predictedArrivalTime, plannedArrivalPosition,
                 predictedArrivalPosition, arrivalCancelled, plannedDepartureTime, predictedDepartureTime,
@@ -837,15 +924,54 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         return remarks;
     }
 
-    private List<Location> parseLocList(final JSONArray locList) throws JSONException {
+    private List<Style> parseIcoList(final JSONArray icoList) throws JSONException {
+        final List<Style> styles = new ArrayList<>(icoList.length());
+        for (int i = 0; i < icoList.length(); i++) {
+            final JSONObject ico = icoList.getJSONObject(i);
+            if (ico.has("bg")) {
+                final int background = parseIcoColor(ico.getJSONObject("bg"));
+                final JSONObject fg = ico.optJSONObject("fg");
+                final int foreground = fg != null ? parseIcoColor(fg) : Style.deriveForegroundColor(background);
+                final String shp = ico.optString("shp", null);
+                if (shp == null) {
+                    styles.add(new Style(background, foreground));
+                } else {
+                    final Style.Shape shape;
+                    if ("C".equals(shp))
+                        shape = Style.Shape.CIRCLE;
+                    else if ("R".equals(shp))
+                        shape = Style.Shape.RECT;
+                    else
+                        throw new IllegalStateException("cannot handle shp: " + shp);
+                    styles.add(new Style(shape, background, foreground));
+                }
+            } else {
+                styles.add(null);
+            }
+        }
+        return styles;
+    }
+
+    private int parseIcoColor(final JSONObject color) throws JSONException {
+        final int a = color.optInt("a", 255);
+        final int r = color.getInt("r");
+        final int g = color.getInt("g");
+        final int b = color.getInt("b");
+        if (r != -1 || g != -1 || b != -1)
+            return Style.argb(a, r, g, b);
+        else
+            return 0;
+    }
+
+    private List<Location> parseLocList(final JSONArray locList, final JSONArray crdSysList) throws JSONException {
         final List<Location> locations = new ArrayList<>(locList.length());
         for (int iLoc = 0; iLoc < locList.length(); iLoc++)
-            locations.add(parseLoc(locList, iLoc, null));
+            locations.add(parseLoc(locList, iLoc, null, crdSysList));
         return locations;
     }
 
     private Location parseLoc(final JSONArray locList, final int locListIndex,
-            @Nullable Set<Integer> previousLocListIndexes) throws JSONException {
+            @Nullable Set<Integer> previousLocListIndexes, final JSONArray crdSysList) throws JSONException {
         final JSONObject loc = locList.getJSONObject(locListIndex);
         final String type = loc.getString("type");
 
@@ -860,7 +986,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     previousLocListIndexes = new HashSet<>();
                 if (!previousLocListIndexes.contains(mMastLocX)) {
                     previousLocListIndexes.add(locListIndex);
-                    return parseLoc(locList, mMastLocX, previousLocListIndexes);
+                    return parseLoc(locList, mMastLocX, previousLocListIndexes, crdSysList);
                 }
             }
             locationType = LocationType.STATION;
@@ -883,11 +1009,18 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         }
 
         final JSONObject crd = loc.optJSONObject("crd");
-        if (crd != null)
+        if (crd != null) {
+            final int crdSysX = loc.optInt("crdSysX", -1);
+            if (crdSysX != -1) {
+                final String crdSysType = crdSysList.getJSONObject(crdSysX).getString("type");
+                if (!"WGS84".equals(crdSysType))
+                    throw new RuntimeException("unknown type: " + crdSysType);
+            }
             return new Location(locationType, id, Point.from1E6(crd.getInt("y"), crd.getInt("x")), placeAndName[0],
                     placeAndName[1], products);
-        else
+        } else {
             return new Location(LocationType.STATION, id, null, placeAndName[0], placeAndName[1], products);
+        }
     }
 
     private List<String> parseOpList(final JSONArray opList) throws JSONException {
@@ -902,7 +1035,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         return operators;
     }
 
-    private List<Line> parseProdList(final JSONArray prodList, final List<String> operators) throws JSONException {
+    private List<Line> parseProdList(final JSONArray prodList, final List<String> operators, final List<Style> styles)
+            throws JSONException {
         final int prodListLen = prodList.length();
         final List<Line> lines = new ArrayList<>(prodListLen);
 
@@ -911,18 +1045,34 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
             final String name = Strings.emptyToNull(prod.getString("name"));
             final String nameS = prod.optString("nameS", null);
             final String number = prod.optString("number", null);
+            final int icoIndex = prod.getInt("icoX");
+            final Style style = styles.get(icoIndex);
             final int oprIndex = prod.optInt("oprX", -1);
             final String operator = oprIndex != -1 ? operators.get(oprIndex) : null;
             final int cls = prod.optInt("cls", -1);
+            final JSONObject prodCtx = prod.optJSONObject("prodCtx");
+            final String id = prodCtx != null ? prodCtx.optString("lineId", null) : null;
             final Product product = cls != -1 ? intToProduct(cls) : null;
-            lines.add(newLine(operator, product, name, nameS, number));
+            lines.add(newLine(id, operator, product, name, nameS, number, style));
         }
 
         return lines;
     }
 
-    protected Line newLine(final String operator, final Product product, final @Nullable String name,
-            final @Nullable String shortName, final @Nullable String number) {
+    private List<String> parsePolyList(final JSONArray polyList) throws JSONException {
+        final int len = polyList.length();
+        final List<String> polylines = new ArrayList<>(len);
+
+        for (int i = 0; i < len; i++) {
+            final JSONObject poly = polyList.getJSONObject(i);
+            checkState(poly.getBoolean("delta"));
+            polylines.add(poly.getString("crdEncYX"));
+        }
+        return polylines;
+    }
+
+    protected Line newLine(final String id, final String operator, final Product product, final @Nullable String name,
+            final @Nullable String shortName, final @Nullable String number, final Style style) {
         final String longName;
         if (name != null)
             longName = name + (number != null && !name.endsWith(number) ? " (" + number + ")" : "");
@@ -940,10 +1090,10 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                 label = number;
             else
                 label = name;
-            return new Line(null, operator, product, label, longName, lineStyle(operator, product, label));
+            return new Line(id, operator, product, label, longName, lineStyle(operator, product, label));
         } else {
             // Otherwise the longer label is fine
-            return new Line(null, operator, product, name, longName, lineStyle(operator, product, name));
+            return new Line(id, operator, product, name, longName, lineStyle(operator, product, name));
         }
     }
 
@@ -978,6 +1128,21 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
         @Override
         public boolean canQueryEarlier() {
             return earlierContext != null;
+        }
+    }
+
+    public static final byte[] decryptSalt(final String encryptedSalt, final String saltEncryptionKey) {
+        try {
+            final byte[] key = BaseEncoding.base16().lowerCase().decode(saltEncryptionKey);
+            checkState(key.length * 8 == 128, "encryption key must be 128 bits");
+            final SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
+            final IvParameterSpec ivParameterSpec = new IvParameterSpec(new byte[16]);
+            final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivParameterSpec);
+            return cipher.doFinal(BaseEncoding.base64().decode(encryptedSalt));
+        } catch (final GeneralSecurityException x) {
+            // should not happen
+            throw new RuntimeException(x);
         }
     }
 }

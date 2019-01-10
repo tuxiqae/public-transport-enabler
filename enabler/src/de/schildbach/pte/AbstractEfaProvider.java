@@ -241,9 +241,10 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
         url.addEncodedQueryParameter("coordOutputFormatTail", Integer.toString(COORD_FORMAT_TAIL));
     }
 
-    protected SuggestLocationsResult jsonStopfinderRequest(final Location constraint) throws IOException {
+    protected SuggestLocationsResult jsonStopfinderRequest(final CharSequence constraint,
+            final @Nullable Set<LocationType> types, final int maxLocations) throws IOException {
         final HttpUrl.Builder url = stopFinderEndpoint.newBuilder();
-        appendStopfinderRequestParameters(url, constraint, "JSON");
+        appendStopfinderRequestParameters(url, constraint, "JSON", types, maxLocations);
         final CharSequence page = httpClient.get(url.build());
         final ResultHeader header = new ResultHeader(network, SERVER_PRODUCT);
 
@@ -349,28 +350,35 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
         return new SuggestedLocation(location, quality);
     }
 
-    private void appendStopfinderRequestParameters(final HttpUrl.Builder url, final Location constraint,
-            final String outputFormat) {
+    private void appendStopfinderRequestParameters(final HttpUrl.Builder url, final CharSequence constraint,
+            final String outputFormat, final @Nullable Set<LocationType> types, final int maxLocations) {
         appendCommonRequestParams(url, outputFormat);
         url.addEncodedQueryParameter("locationServerActive", "1");
         if (includeRegionId)
             url.addEncodedQueryParameter("regionID_sf", "1"); // prefer own region
-        appendLocationParams(url, constraint, "sf");
-        if (constraint.type == LocationType.ANY) {
-            if (needsSpEncId)
-                url.addEncodedQueryParameter("SpEncId", "0");
-            // 1=place 2=stop 4=street 8=address 16=crossing 32=poi 64=postcode
-            url.addEncodedQueryParameter("anyObjFilter_sf", Integer.toString(2 + 4 + 8 + 16 + 32 + 64));
-            url.addEncodedQueryParameter("reducedAnyPostcodeObjFilter_sf", "64");
-            url.addEncodedQueryParameter("reducedAnyTooManyObjFilter_sf", "2");
-            url.addEncodedQueryParameter("useHouseNumberList", "true");
-            url.addEncodedQueryParameter("anyMaxSizeHitList", "500");
-        }
+        url.addEncodedQueryParameter("type_sf", "any");
+        url.addEncodedQueryParameter("name_sf", ParserUtils.urlEncode(constraint.toString(), requestUrlEncoding));
+        if (needsSpEncId)
+            url.addEncodedQueryParameter("SpEncId", "0");
+        int filter = 0;
+        if (types == null || types.contains(LocationType.STATION))
+            filter += 2; // stop
+        if (types == null || types.contains(LocationType.POI))
+            filter += 32; // poi
+        if (types == null || types.contains(LocationType.ADDRESS))
+            filter += 4 + 8 + 16 + 64; // street + address + crossing + postcode
+        url.addEncodedQueryParameter("anyObjFilter_sf", Integer.toString(filter));
+        url.addEncodedQueryParameter("reducedAnyPostcodeObjFilter_sf", "64");
+        url.addEncodedQueryParameter("reducedAnyTooManyObjFilter_sf", "2");
+        url.addEncodedQueryParameter("useHouseNumberList", "true");
+        if (maxLocations > 0)
+            url.addEncodedQueryParameter("anyMaxSizeHitList", Integer.toString(maxLocations));
     }
 
-    protected SuggestLocationsResult mobileStopfinderRequest(final Location constraint) throws IOException {
+    protected SuggestLocationsResult mobileStopfinderRequest(final CharSequence constraint,
+            final @Nullable Set<LocationType> types, final int maxLocations) throws IOException {
         final HttpUrl.Builder url = stopFinderEndpoint.newBuilder();
-        appendStopfinderRequestParameters(url, constraint, "XML");
+        appendStopfinderRequestParameters(url, constraint, "XML", types, maxLocations);
         final AtomicReference<SuggestLocationsResult> result = new AtomicReference<>();
 
         final HttpClient.Callback callback = new HttpClient.Callback() {
@@ -604,8 +612,9 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
     }
 
     @Override
-    public SuggestLocationsResult suggestLocations(final CharSequence constraint) throws IOException {
-        return jsonStopfinderRequest(new Location(LocationType.ANY, null, null, constraint.toString()));
+    public SuggestLocationsResult suggestLocations(final CharSequence constraint,
+            final @Nullable Set<LocationType> types, final int maxLocations) throws IOException {
+        return jsonStopfinderRequest(constraint, types, maxLocations);
     }
 
     private interface ProcessItdOdvCallback {
