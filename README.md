@@ -43,6 +43,10 @@ You can build all sub-projects at once using Gradle:
   * `NetworkId.FI`
   * [HslProvider.java](enabler/src/de/schildbach/pte/HslProvider.java)
   * [HslProviderLiveTest.java](enabler/test/de/schildbach/pte/live/HslProviderLiveTest.java)
+* [Portugal](https://github.com/schildbach/public-transport-enabler/pull/244)
+  * `NetworkId.PT`
+  * [PortugalProvider.java](enabler/src/de/schildbach/pte/PortugalProvider.java)
+  * [PortugalProviderLiveTest.java](enabler/test/de/schildbach/pte/live/PortugalProviderLiveTest.java)
 
 There is a [mirror on github](https://github.com/opentransitmap/public-transport-enabler/), but for merge request please refer to our [Gitlab repository](https://gitlab.com/opentransitmap/public-transport-enabler).
 
