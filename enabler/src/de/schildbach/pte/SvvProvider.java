@@ -38,12 +38,17 @@ public class SvvProvider extends AbstractHafasClientInterfaceProvider {
     private static final Product[] PRODUCTS_MAP = { Product.HIGH_SPEED_TRAIN, Product.SUBURBAN_TRAIN, Product.SUBWAY,
             null, Product.TRAM, Product.REGIONAL_TRAIN, Product.BUS, Product.BUS, Product.TRAM, Product.FERRY,
             Product.ON_DEMAND, Product.BUS, Product.REGIONAL_TRAIN, null, null, null };
+    private static final String DEFAULT_API_CLIENT = "{\"id\":\"VAO\",\"l\":\"vs_svv\",\"type\":\"AND\"}";
 
     public SvvProvider(final String apiAuthorization) {
+        this(DEFAULT_API_CLIENT, apiAuthorization);
+    }
+
+    public SvvProvider(final String apiClient, final String apiAuthorization) {
         super(NetworkId.SVV, API_BASE, PRODUCTS_MAP);
         setApiVersion("1.18");
         setApiExt("VAO.6");
-        setApiClient("{\"id\":\"VAO\",\"l\":\"vs_svv\",\"type\":\"AND\"}");
+        setApiClient(apiClient);
         setApiAuthorization(apiAuthorization);
         setStyles(STYLES);
         httpClient.setTrustAllCertificates(true);

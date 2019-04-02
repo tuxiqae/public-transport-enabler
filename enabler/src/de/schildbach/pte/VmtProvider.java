@@ -34,12 +34,17 @@ public class VmtProvider extends AbstractHafasClientInterfaceProvider {
     private static final Product[] PRODUCTS_MAP = { Product.HIGH_SPEED_TRAIN, Product.HIGH_SPEED_TRAIN,
             Product.HIGH_SPEED_TRAIN, Product.REGIONAL_TRAIN, Product.SUBURBAN_TRAIN, Product.TRAM, Product.FERRY,
             Product.BUS /* guessing */, Product.BUS, null };
+    private static final String DEFAULT_API_CLIENT = "{\"name\":\"VMT\",\"type\":\"AND\"}";
 
-    public VmtProvider(final String jsonApiAuthorization) {
+    public VmtProvider(final String apiAuthorization) {
+        this(DEFAULT_API_CLIENT, apiAuthorization);
+    }
+
+    public VmtProvider(final String apiClient, final String apiAuthorization) {
         super(NetworkId.VMT, API_BASE, PRODUCTS_MAP);
         setApiVersion("1.15");
-        setApiClient("{\"name\":\"VMT\",\"type\":\"AND\"}");
-        setApiAuthorization(jsonApiAuthorization);
+        setApiClient(apiClient);
+        setApiAuthorization(apiAuthorization);
     }
 
     private static final String[] PLACES = { "Erfurt", "Jena", "Gera", "Weimar", "Gotha" };

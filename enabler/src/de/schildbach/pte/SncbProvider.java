@@ -34,12 +34,17 @@ public class SncbProvider extends AbstractHafasClientInterfaceProvider {
     private static final Product[] PRODUCTS_MAP = { Product.HIGH_SPEED_TRAIN, null, Product.HIGH_SPEED_TRAIN, null,
             null, Product.BUS, Product.REGIONAL_TRAIN, null, Product.SUBWAY, Product.BUS, Product.TRAM, null, null,
             null, null, null };
+    private static final String DEFAULT_API_CLIENT = "{\"id\":\"SNCB\",\"type\":\"AND\"}";
 
-    public SncbProvider(final String jsonApiAuthorization) {
+    public SncbProvider(final String apiAuthorization) {
+        this(DEFAULT_API_CLIENT, apiAuthorization);
+    }
+
+    public SncbProvider(final String apiClient, final String apiAuthorization) {
         super(NetworkId.SNCB, API_BASE, PRODUCTS_MAP);
         setApiVersion("1.15");
-        setApiClient("{\"id\":\"SNCB\",\"type\":\"AND\"}");
-        setApiAuthorization(jsonApiAuthorization);
+        setApiClient(apiClient);
+        setApiAuthorization(apiAuthorization);
     }
 
     private static final String[] PLACES = { "Antwerpen", "Gent", "Charleroi", "Liege", "Liège", "Brussel" };

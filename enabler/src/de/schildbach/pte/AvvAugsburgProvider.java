@@ -31,13 +31,18 @@ public class AvvAugsburgProvider extends AbstractHafasClientInterfaceProvider {
     private static final Product[] PRODUCTS_MAP = { Product.HIGH_SPEED_TRAIN, Product.HIGH_SPEED_TRAIN,
             Product.REGIONAL_TRAIN, Product.REGIONAL_TRAIN, Product.SUBURBAN_TRAIN, Product.BUS, Product.FERRY,
             Product.SUBWAY, Product.TRAM, Product.ON_DEMAND };
+    private static final String DEFAULT_API_CLIENT = "{\"id\":\"DB-REGIO-AVV\",\"v\":\"100\",\"type\":\"AND\",\"name\":\"RegioNavigator\"}";
 
-    public AvvAugsburgProvider(final String jsonApiAuthorization) {
+    public AvvAugsburgProvider(final String apiAuthorization) {
+        this(DEFAULT_API_CLIENT, apiAuthorization);
+    }
+
+    public AvvAugsburgProvider(final String apiClient, final String apiAuthorization) {
         super(NetworkId.AVV_AUGSBURG, API_BASE, PRODUCTS_MAP);
         setApiVersion("1.18");
         setApiExt("DB.R16.12.a");
-        setApiClient("{\"id\":\"DB-REGIO-AVV\",\"v\":\"100\",\"type\":\"AND\",\"name\":\"RegioNavigator\"}");
-        setApiAuthorization(jsonApiAuthorization);
+        setApiClient(apiClient);
+        setApiAuthorization(apiAuthorization);
     }
 
     private static final String[] PLACES = { "Augsburg (Bayern)", "Augsburg" };

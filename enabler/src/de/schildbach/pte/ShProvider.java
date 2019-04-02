@@ -36,11 +36,16 @@ public class ShProvider extends AbstractHafasClientInterfaceProvider {
     private static final Product[] PRODUCTS_MAP = { Product.HIGH_SPEED_TRAIN, Product.HIGH_SPEED_TRAIN,
             Product.HIGH_SPEED_TRAIN, Product.REGIONAL_TRAIN, Product.SUBURBAN_TRAIN, Product.BUS, Product.FERRY,
             Product.SUBWAY, Product.TRAM, Product.ON_DEMAND };
+    private static final String DEFAULT_API_CLIENT = "{\"id\":\"NAHSH\",\"type\":\"AND\"}";
 
     public ShProvider(final String apiAuthorization) {
+        this(DEFAULT_API_CLIENT, apiAuthorization);
+    }
+
+    public ShProvider(final String apiClient, final String apiAuthorization) {
         super(NetworkId.SH, API_BASE, PRODUCTS_MAP);
         setApiVersion("1.18");
-        setApiClient("{\"id\":\"NAHSH\",\"type\":\"AND\"}");
+        setApiClient(apiClient);
         setApiAuthorization(apiAuthorization);
         setStyles(STYLES);
     }
