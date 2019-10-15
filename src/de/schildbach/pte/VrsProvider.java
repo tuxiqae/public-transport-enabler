@@ -410,10 +410,8 @@ public class VrsProvider extends AbstractNetworkProvider {
             }
             final ResultHeader header = new ResultHeader(NetworkId.VRS, SERVER_PRODUCT, null, null, serverTime, null);
             return new NearbyLocationsResult(header, locations);
-        } catch (final JSONException x) {
+        } catch (final JSONException | ParseException x) {
             throw new RuntimeException("cannot parse: '" + page + "' on " + url, x);
-        } catch (final ParseException e) {
-            throw new RuntimeException("cannot parse: '" + page + "' on " + url, e);
         }
     }
 
@@ -460,11 +458,11 @@ public class VrsProvider extends AbstractNetworkProvider {
                 return new QueryDeparturesResult(header, QueryDeparturesResult.Status.INVALID_STATION);
             }
             for (int iStation = 0; iStation < timetable.length(); iStation++) {
-                final List<Departure> departures = new ArrayList<Departure>();
+                final List<Departure> departures = new ArrayList<>();
                 final JSONObject station = timetable.getJSONObject(iStation);
                 final Location location = parseLocationAndPosition(station.getJSONObject("stop")).location;
                 final JSONArray events = station.getJSONArray("events");
-                final List<LineDestination> lines = new ArrayList<LineDestination>();
+                final List<LineDestination> lines = new ArrayList<>();
                 // for all departures
                 for (int iEvent = 0; iEvent < events.length(); iEvent++) {
                     final JSONObject event = events.getJSONObject(iEvent);
@@ -510,15 +508,13 @@ public class VrsProvider extends AbstractNetworkProvider {
             }
 
             return result;
-        } catch (final JSONException x) {
+        } catch (final JSONException | ParseException x) {
             throw new RuntimeException("cannot parse: '" + page + "' on " + url, x);
-        } catch (final ParseException e) {
-            throw new RuntimeException("cannot parse: '" + page + "' on " + url, e);
         }
     }
 
     private void queryLinesForStation(String stationId, List<LineDestination> lineDestinations) throws IOException {
-        Set<String> lineNumbersAlreadyKnown = new HashSet<String>();
+        Set<String> lineNumbersAlreadyKnown = new HashSet<>();
         for (LineDestination lineDestionation : lineDestinations) {
             lineNumbersAlreadyKnown.add(lineDestionation.line.label);
         }
@@ -906,10 +902,8 @@ public class VrsProvider extends AbstractNetworkProvider {
                     context.disableEarlier();
             }
             return new QueryTripsResult(header, url.build().toString(), from, via, to, context, trips);
-        } catch (final JSONException x) {
+        } catch (final JSONException | ParseException x) {
             throw new RuntimeException("cannot parse: '" + page + "' on " + url, x);
-        } catch (final ParseException e) {
-            throw new RuntimeException("cannot parse: '" + page + "' on " + url, e);
         }
     }
 
