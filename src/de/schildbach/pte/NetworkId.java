@@ -30,6 +30,9 @@ public enum NetworkId {
     // Austria
     OEBB, VAO, VOR, WIEN, OOEVV, LINZ, SVV, VVT, STV, VMOBIL,
 
+    // Czech Republic
+    CZECHREPUBLIC,
+
     // Switzerland
     SBB, VBL, ZVV,
 
