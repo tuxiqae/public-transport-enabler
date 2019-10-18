@@ -31,7 +31,7 @@ public enum NetworkId {
     OEBB, VAO, VOR, WIEN, OOEVV, LINZ, SVV, VVT, STV, VMOBIL,
 
     // Czech Republic
-    CZECHREPUBLIC,
+    CZECH_REPUBLIC,
 
     // Switzerland
     SBB, VBL, ZVV,
@@ -79,7 +79,7 @@ public enum NetworkId {
     DUB,
 
     // United States
-    RTACHICAGO, OREGON, MASSACHUSETTS, CMTA, NEWYORK, CALIFORNIA,
+    BART, RTACHICAGO, OREGON, MASSACHUSETTS, CMTA, NEWYORK, CALIFORNIA,
 
     // Canada
     ONTARIO, QUEBEC, BRITISHCOLUMBIA,

@@ -26,7 +26,7 @@ public class CzechRepublicProvider extends AbstractNavitiaProvider {
     private static final String API_REGION = "cz";
 
     public CzechRepublicProvider(final HttpUrl apiBase, final String authorization) {
-        super(NetworkId.CZECHREPUBLIC, apiBase, authorization);
+        super(NetworkId.CZECH_REPUBLIC, apiBase, authorization);
         setTimeZone("Europe/Prague");
     }
 
