@@ -30,7 +30,7 @@ import okhttp3.HttpUrl;
  * @author Andreas Schildbach
  */
 public class OebbProvider extends AbstractHafasClientInterfaceProvider {
-    private static final HttpUrl API_BASE = HttpUrl.parse("http://fahrplan.oebb.at/bin/");
+    private static final HttpUrl API_BASE = HttpUrl.parse("https://fahrplan.oebb.at/bin/");
     private static final Product[] PRODUCTS_MAP = { Product.HIGH_SPEED_TRAIN, Product.HIGH_SPEED_TRAIN,
             Product.HIGH_SPEED_TRAIN, Product.REGIONAL_TRAIN, Product.REGIONAL_TRAIN, Product.SUBURBAN_TRAIN,
             Product.BUS, Product.FERRY, Product.SUBWAY, Product.TRAM, Product.HIGH_SPEED_TRAIN, Product.ON_DEMAND,
@@ -38,11 +38,15 @@ public class OebbProvider extends AbstractHafasClientInterfaceProvider {
     private static final String DEFAULT_API_CLIENT = "{\"id\":\"OEBB\",\"type\":\"AND\"}";
 
     public OebbProvider(final String apiAuthorization) {
-        this(DEFAULT_API_CLIENT, apiAuthorization);
+        this(API_BASE, apiAuthorization);
     }
 
-    public OebbProvider(final String apiClient, final String apiAuthorization) {
-        super(NetworkId.OEBB, API_BASE, PRODUCTS_MAP);
+    public OebbProvider(final HttpUrl apiBase, final String apiAuthorization) {
+        this(apiBase, DEFAULT_API_CLIENT, apiAuthorization);
+    }
+
+    public OebbProvider(final HttpUrl apiBase, final String apiClient, final String apiAuthorization) {
+        super(NetworkId.OEBB, apiBase, PRODUCTS_MAP);
         setApiVersion("1.16");
         setApiClient(apiClient);
         setApiAuthorization(apiAuthorization);

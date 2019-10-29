@@ -265,6 +265,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     return new NearbyLocationsResult(header, NearbyLocationsResult.Status.SERVICE_DOWN);
                 if ("CGI_NO_SERVER".equals(err))
                     return new NearbyLocationsResult(header, NearbyLocationsResult.Status.SERVICE_DOWN);
+                if ("H_UNKNOWN".equals(err))
+                    return new NearbyLocationsResult(header, NearbyLocationsResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + " " + errTxt);
             }
             final JSONObject res = svcRes.getJSONObject("res");
@@ -351,6 +353,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                 if ("CGI_READ_FAILED".equals(err))
                     return new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN);
                 if ("CGI_NO_SERVER".equals(err))
+                    return new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN);
+                if ("H_UNKNOWN".equals(err))
                     return new QueryDeparturesResult(header, QueryDeparturesResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + " " + errTxt);
             }
@@ -486,6 +490,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                 if ("CGI_READ_FAILED".equals(err))
                     return new SuggestLocationsResult(header, SuggestLocationsResult.Status.SERVICE_DOWN);
                 if ("CGI_NO_SERVER".equals(err))
+                    return new SuggestLocationsResult(header, SuggestLocationsResult.Status.SERVICE_DOWN);
+                if ("H_UNKNOWN".equals(err))
                     return new SuggestLocationsResult(header, SuggestLocationsResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + " " + errTxt);
             }
@@ -627,6 +633,8 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
                 if ("CGI_NO_SERVER".equals(err))
                     return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
+                if ("H_UNKNOWN".equals(err))
+                    return new QueryTripsResult(header, QueryTripsResult.Status.SERVICE_DOWN);
                 throw new RuntimeException(err + " " + errTxt);
             }
             final JSONObject res = svcRes.getJSONObject("res");
@@ -666,7 +674,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                     final Stop arrivalStop = parseJsonStop(secArr, locList, crdSysList, c, baseDate);
 
                     final Trip.Leg leg;
-                    if (SECTION_TYPE_JOURNEY.equals(secType)) {
+                    if (SECTION_TYPE_JOURNEY.equals(secType) || SECTION_TYPE_TELE_TAXI.equals(secType)) {
                         final JSONObject jny = sec.getJSONObject("jny");
                         final Line line = lines.get(jny.getInt("prodX"));
                         final String dirTxt = jny.optString("dirTxt", null);
@@ -733,7 +741,7 @@ public abstract class AbstractHafasClientInterfaceProvider extends AbstractHafas
                         leg = new Trip.Individual(Trip.Individual.Type.WALK, departureStop.location,
                                 departureStop.getDepartureTime(), arrivalStop.location, arrivalStop.getArrivalTime(),
                                 null, distance);
-                    } else if (SECTION_TYPE_TRANSFER.equals(secType) || SECTION_TYPE_DEVI.equals(secType) || SECTION_TYPE_TELE_TAXI.equals(secType)) {
+                    } else if (SECTION_TYPE_TRANSFER.equals(secType) || SECTION_TYPE_DEVI.equals(secType)) {
                         final JSONObject gis = sec.optJSONObject("gis");
                         final int distance = gis != null ? gis.optInt("dist", 0) : 0;
                         leg = new Trip.Individual(Trip.Individual.Type.TRANSFER, departureStop.location,

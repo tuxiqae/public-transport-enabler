@@ -34,8 +34,9 @@ import com.google.common.base.Objects;
 /**
  * @author Andreas Schildbach
  */
-@SuppressWarnings("serial")
 public final class Departure implements Serializable {
+    private static final long serialVersionUID = -9104517779537062795L;
+
     final public @Nullable Date plannedTime;
     final public @Nullable Date predictedTime;
     final public Line line;
@@ -96,10 +97,5 @@ public final class Departure implements Serializable {
         return Objects.hashCode(plannedTime, predictedTime, line, destination);
     }
 
-    public static final Comparator<Departure> TIME_COMPARATOR = new Comparator<Departure>() {
-        @Override
-        public int compare(final Departure departure0, final Departure departure1) {
-            return departure0.getTime().compareTo(departure1.getTime());
-        }
-    };
+    public static final Comparator<Departure> TIME_COMPARATOR = (departure0, departure1) -> departure0.getTime().compareTo(departure1.getTime());
 }
