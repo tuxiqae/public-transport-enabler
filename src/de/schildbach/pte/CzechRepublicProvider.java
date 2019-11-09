@@ -31,7 +31,7 @@ public class CzechRepublicProvider extends AbstractNavitiaProvider {
     }
 
     public CzechRepublicProvider(final String authorization) {
-        super(NetworkId.CZECHREPUBLIC, authorization);
+        super(NetworkId.CZECH_REPUBLIC, authorization);
         setTimeZone("Europe/Prague");
     }
 
