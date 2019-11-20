@@ -69,5 +69,3 @@ Just replace it with the provider you want to test.
 
 There is a [mirror on github](https://github.com/opentransitmap/public-transport-enabler/), but for merge request please refer to our [Gitlab repository](https://gitlab.com/opentransitmap/public-transport-enabler).
 
-    $ cp test/de/schildbach/pte/live/secrets.properties.template test/de/schildbach/pte/live/secrets.properties
-
