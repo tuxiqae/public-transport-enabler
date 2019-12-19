@@ -898,6 +898,10 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                 return new Line(id, network, Product.HIGH_SPEED_TRAIN, "EN" + trainNum);
             if (("IC".equals(trainType) || "IC".equals(trainName) || "InterCity".equals(trainName)) && trainNum != null)
                 return new Line(id, network, Product.HIGH_SPEED_TRAIN, "IC" + trainNum);
+            if ("IC21".equals(trainNum) && trainName == null)
+                return new Line(id, network, Product.HIGH_SPEED_TRAIN, trainNum);
+            if ("IC40".equals(trainNum) && trainName == null)
+                return new Line(id, network, Product.HIGH_SPEED_TRAIN, trainNum);
             if (("ICE".equals(trainType) || "ICE".equals(trainName) || "Intercity-Express".equals(trainName))
                     && trainNum != null)
                 return new Line(id, network, Product.HIGH_SPEED_TRAIN, "ICE" + trainNum);
@@ -960,11 +964,15 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
 
             if ("IR".equals(trainType) || "Interregio".equals(trainName) || "InterRegio".equals(trainName))
                 return new Line(id, network, Product.REGIONAL_TRAIN, "IR" + trainNum);
+            if ("IR36".equals(trainNum) && trainName == null)
+                return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
             if ("IR75".equals(trainNum) && trainName == null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
             if ("IRE".equals(trainType) || "Interregio-Express".equals(trainName))
                 return new Line(id, network, Product.REGIONAL_TRAIN, "IRE" + trainNum);
             if ("IRE1".equals(trainNum) && trainName == null)
+                return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
+            if ("IRE6".equals(trainNum) && trainName == null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
             if ("InterRegioExpress".equals(trainName))
                 return new Line(id, network, Product.REGIONAL_TRAIN, "IRE" + trainNumStr);
