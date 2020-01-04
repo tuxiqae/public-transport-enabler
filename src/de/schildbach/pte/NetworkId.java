@@ -99,6 +99,9 @@ public enum NetworkId {
     // Nicaragua
     NICARAGUA,
 
+    //Israel
+    IL,
+
     // Brazil
     BRAZIL, BRFLORIPA,
 
