@@ -964,6 +964,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
 
             if ("IR".equals(trainType) || "Interregio".equals(trainName) || "InterRegio".equals(trainName))
                 return new Line(id, network, Product.REGIONAL_TRAIN, "IR" + trainNum);
+            if ("IR13".equals(trainNum) && trainName == null)
+                return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
             if ("IR36".equals(trainNum) && trainName == null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
             if ("IR75".equals(trainNum) && trainName == null)
@@ -980,7 +982,9 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                 return new Line(id, network, Product.REGIONAL_TRAIN, "RE" + trainNum);
             if (trainType == null && trainNum != null && P_LINE_RE.matcher(trainNum).matches())
                 return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
-            if ("RE6a".equals(trainNum) && trainType == null && trainName == null)
+            if ("RE6a".equals(trainNum) && trainName == null)
+                return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
+            if ("RE19a".equals(trainNum) && trainName == null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
             if ("RE3 / RB30".equals(trainNum) && trainType == null && trainName == null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, "RE3/RB30");
