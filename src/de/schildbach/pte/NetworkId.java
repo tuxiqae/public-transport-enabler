@@ -100,7 +100,7 @@ public enum NetworkId {
     NICARAGUA,
 
     // Brazil
-    BR, BRFLORIPA,
+    BRAZIL, BRFLORIPA,
 
     // Hungary
     HUNGARY,
