@@ -43,11 +43,7 @@ Just replace it with the provider you want to test.
   * `NetworkId.NEWYORK`
   * [NewyorkProvider.java](src/de/schildbach/pte/NewyorkProvider.java)
   * [NewyorkProviderLiveTest.java](test/de/schildbach/pte/live/NewyorkProviderLiveTest.java)
-* [Brazil](https://github.com/schildbach/public-transport-enabler/pull/179)
-  * `NetworkId.BR`
-  * [BrProvider.java](src/de/schildbach/pte/BrProvider.java)
-  * [BrProviderLiveTest.java](test/de/schildbach/pte/live/BrProviderLiveTest.java)
-  * `NetworkId.BRFLORIPA`
+* `NetworkId.BRFLORIPA`
   * [BrFloripaProvider.java](src/de/schildbach/pte/BrFloripaProvider.java)
   * [BrFloripaProviderLiveTest.java](test/de/schildbach/pte/live/BrFloripaProviderLiveTest.java)
 * [California, United States](https://github.com/schildbach/public-transport-enabler/pull/164)
