@@ -20,7 +20,6 @@ package de.schildbach.pte.live;
 import org.junit.Test;
 
 import de.schildbach.pte.BrFloripaProvider;
-import de.schildbach.pte.BrProvider;
 import de.schildbach.pte.dto.Point;
 import okhttp3.HttpUrl;
 
