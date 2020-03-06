@@ -1081,6 +1081,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             if (trainType == null && ("C11".equals(trainNum) || "C13".equals(trainNum) || "C14".equals(trainNum)
                     || "C15".equals(trainNum)))
                 return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
+            if ("CB523".equals(trainNum))
+                return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
             if ("VEC".equals(trainType) || "vectus Verkehrsgesellschaft".equals(trainName))
                 return new Line(id, network, Product.REGIONAL_TRAIN, "VEC" + trainNum);
             if ("HzL".equals(trainType) || "Hohenzollerische Landesbahn AG".equals(trainName))
@@ -2492,6 +2494,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
 
                 XmlPullUtil.enter(pp, "itdPoint");
                 XmlPullUtil.optSkip(pp, "genAttrList");
+                XmlPullUtil.optSkip(pp, "sPAs");
                 XmlPullUtil.require(pp, "itdDateTime");
 
                 final Date plannedStopArrivalTime;
