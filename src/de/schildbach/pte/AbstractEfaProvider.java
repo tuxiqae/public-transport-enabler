@@ -525,7 +525,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                         final List<Point> path = processItdPathCoordinates(pp);
                         final Point coord1 = path != null ? path.get(0) : null;
 
-                        final EnumSet<Product> products = EnumSet.noneOf(Product.class);
+                        EnumSet<Product> products = null;
                         if (XmlPullUtil.optEnter(pp, "genAttrList")) {
                             while (XmlPullUtil.optEnter(pp, "genAttrElem")) {
                                 final String attrName = XmlPullUtil.valueTag(pp, "name");
@@ -533,6 +533,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                                 XmlPullUtil.skipExit(pp, "genAttrElem");
 
                                 if ("STOP_MAJOR_MEANS".equals(attrName)) {
+                                    products = EnumSet.noneOf(Product.class);
                                     final Product product = majorMeansToProduct(Integer.parseInt(attrValue));
                                     if (product != null)
                                         products.add(product);
@@ -603,7 +604,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                         final String locationId = locationType == LocationType.STATION ? id : stateless;
                         final Point coord1 = parseCoord(XmlPullUtil.valueTag(pp, "c"));
 
-                        final EnumSet<Product> products = EnumSet.noneOf(Product.class);
+                        EnumSet<Product> products = null;
                         if (XmlPullUtil.optEnter(pp, "attrs")) {
                             while (XmlPullUtil.optEnter(pp, "attr")) {
                                 final String attrName = XmlPullUtil.valueTag(pp, "n");
@@ -611,6 +612,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                                 XmlPullUtil.skipExit(pp, "attr");
 
                                 if ("STOP_MAJOR_MEANS".equals(attrName)) {
+                                    products = EnumSet.noneOf(Product.class);
                                     final Product product = majorMeansToProduct(Integer.parseInt(attrValue));
                                     if (product != null)
                                         products.add(product);
@@ -1011,6 +1013,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                 return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
             if ("IR36".equals(trainNum) && trainName == null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
+            if ("IR37".equals(trainNum) && trainName == null)
+                return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
             if ("IR75".equals(trainNum) && trainName == null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
             if ("IRE".equals(trainType) || "Interregio-Express".equals(trainName))
@@ -1219,8 +1223,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                 return new Line(id, network, Product.REGIONAL_TRAIN, "erx" + trainNum);
             if (("ERX".equals(trainType) || "Erixx".equals(trainName)) && trainNum != null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, "ERX" + trainNum);
-            if (("SWE".equals(trainType) || "Südwestdeutsche Verkehrs-AG".equals(trainName)) && trainNum != null)
-                return new Line(id, network, Product.REGIONAL_TRAIN, "SWE" + trainNum);
+            if ("SWE".equals(trainType) || "Südwestdeutsche Verkehrs-AG".equals(trainName) || "Südwestdeutsche Landesverkehrs-AG".equals(trainName))
+                return new Line(id, network, Product.REGIONAL_TRAIN, "SWE" + Strings.nullToEmpty(trainNum));
             if ("SWEG-Zug".equals(trainName)) // Südwestdeutschen Verkehrs-Aktiengesellschaft
                 return new Line(id, network, Product.REGIONAL_TRAIN, "SWEG" + trainNum);
             if (longName != null && longName.startsWith("SWEG-Zug"))
@@ -1325,6 +1329,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                 return new Line(id, network, Product.REGIONAL_TRAIN, "DNA" + trainNum);
             if ("Dieselnetz".equals(trainType) && "Augsburg".equals(trainNum))
                 return new Line(id, network, Product.REGIONAL_TRAIN, "DNA");
+            if (("SAB".equals(trainType) || "Schwäbische Alb-Bahn".equals(trainName)) && trainNum != null)
+                return new Line(id, network, Product.REGIONAL_TRAIN, "SAB" + trainNum);
 
             if (("BSB".equals(trainType) || "Breisgau-S-Bahn Gmbh".equals(trainName)) && trainNum != null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, "BSB" + trainNum);
