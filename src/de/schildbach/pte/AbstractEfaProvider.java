@@ -659,8 +659,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
 
     private String processItdOdv(final XmlPullParser pp, final String expectedUsage,
             final ProcessItdOdvCallback callback) throws XmlPullParserException, IOException {
-        if (!XmlPullUtil.test(pp, "itdOdv"))
-            throw new IllegalStateException("expecting <itdOdv />");
+        XmlPullUtil.require(pp, "itdOdv");
 
         final String usage = XmlPullUtil.attr(pp, "usage");
         if (expectedUsage != null && !usage.equals(expectedUsage))
@@ -696,6 +695,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
         }
 
         XmlPullUtil.optSkipMultiple(pp, "infoLink");
+        XmlPullUtil.optSkip(pp, "itdMapItemList");
         XmlPullUtil.optSkip(pp, "odvNameInput");
 
         XmlPullUtil.exit(pp, "itdOdvName");
@@ -725,8 +725,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
     }
 
     private String processItdOdvPlace(final XmlPullParser pp) throws XmlPullParserException, IOException {
-        if (!XmlPullUtil.test(pp, "itdOdvPlace"))
-            throw new IllegalStateException("expecting <itdOdvPlace />");
+        XmlPullUtil.require(pp, "itdOdvPlace");
 
         final String placeState = XmlPullUtil.attr(pp, "state");
 
@@ -743,8 +742,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
 
     private Location processOdvNameElem(final XmlPullParser pp, String type, final String defaultPlace)
             throws XmlPullParserException, IOException {
-        if (!XmlPullUtil.test(pp, "odvNameElem"))
-            throw new IllegalStateException("expecting <odvNameElem />");
+        XmlPullUtil.require(pp, "odvNameElem");
 
         if ("any".equals(type))
             type = XmlPullUtil.attr(pp, "anyType");
@@ -1423,7 +1421,7 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
         } else if ("11".equals(mot)) {
             return new Line(id, network, null, ParserUtils.firstNotEmpty(symbol, name));
         } else if ("13".equals(mot)) {
-            if (("S-Bahn".equals(trainName) || (longName != null && longName.startsWith("S-Bahn"))) && symbol != null)
+            if (symbol != null)
                 return new Line(id, network, Product.SUBURBAN_TRAIN, symbol);
         } else if ("17".equals(mot)) {
             if (trainNum == null && trainName != null && trainName.startsWith("Schienenersatz"))
