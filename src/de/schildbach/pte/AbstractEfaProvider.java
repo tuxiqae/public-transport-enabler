@@ -1424,9 +1424,11 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             if ("Schulbus".equals(trainName) && symbol != null)
                 return new Line(id, network, Product.BUS, symbol);
         } else if ("13".equals(mot)) {
+            if ("Ersatzverkehr".equals(trainName) && trainType == null)
+                return new Line(id, network, Product.BUS, "SEV");
             if (trainType == null && trainNum != null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
-        } else if ("15".equals(mot) || "16".equals(mot)) {
+        } else if ("14".equals(mot) || "15".equals(mot) || "16".equals(mot)) {
             if (trainType != null && trainNum != null)
                 return new Line(id, network, Product.HIGH_SPEED_TRAIN, trainType + trainNum);
         } else if ("17".equals(mot)) {
@@ -2022,6 +2024,13 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                     if (p == Product.HIGH_SPEED_TRAIN)
                         hasI = true;
                 }
+
+                if (p == Product.HIGH_SPEED_TRAIN)
+                    url.addEncodedQueryParameter("inclMOT_14", "on").addEncodedQueryParameter("inclMOT_15", "on")
+                            .addEncodedQueryParameter("inclMOT_16", "on");
+
+                if (p == Product.REGIONAL_TRAIN)
+                    url.addEncodedQueryParameter("inclMOT_13", "on");
 
                 if (p == Product.SUBURBAN_TRAIN)
                     url.addEncodedQueryParameter("inclMOT_1", "on");
