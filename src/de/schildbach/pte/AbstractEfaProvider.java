@@ -891,6 +891,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
     private static final Pattern P_LINE_RE = Pattern.compile("RE ?\\d+[ab]?");
     private static final Pattern P_LINE_RB = Pattern.compile("RB ?\\d+[ab]?");
     private static final Pattern P_LINE_R = Pattern.compile("R ?\\d+");
+    private static final Pattern P_LINE_IRE = Pattern.compile("IRE\\d+[ab]?");
+    private static final Pattern P_LINE_MEX = Pattern.compile("MEX\\d+[abc]?");
     private static final Pattern P_LINE_S = Pattern.compile("S ?\\d+");
     private static final Pattern P_LINE_S_DB = Pattern.compile("(S\\d+) \\((?:DB Regio AG)\\)");
     private static final Pattern P_LINE_NUMBER = Pattern.compile("\\d+");
@@ -1016,12 +1018,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                 return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
             if ("IRE".equals(trainType) || "Interregio-Express".equals(trainName))
                 return new Line(id, network, Product.REGIONAL_TRAIN, "IRE" + trainNum);
-            if ("IRE1".equals(trainNum) && trainName == null)
+            if (trainType == null && trainNum != null && P_LINE_IRE.matcher(trainNum).matches())
                 return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
-            if ("IRE6".equals(trainNum) && trainName == null)
-                return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
-            if ("InterRegioExpress".equals(trainName))
-                return new Line(id, network, Product.REGIONAL_TRAIN, "IRE" + trainNumStr);
             if ("RE".equals(trainType) || "Regional-Express".equals(trainName))
                 return new Line(id, network, Product.REGIONAL_TRAIN, "RE" + trainNum);
             if (trainType == null && trainNum != null && P_LINE_RE.matcher(trainNum).matches())
@@ -1324,6 +1322,8 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
                 return new Line(id, network, Product.REGIONAL_TRAIN, "DNA");
             if (("SAB".equals(trainType) || "Schwäbische Alb-Bahn".equals(trainName)) && trainNum != null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, "SAB" + trainNum);
+            if (trainType == null && trainNum != null && P_LINE_MEX.matcher(trainNum).matches()) // Metropolexpress
+                return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
 
             if (("BSB".equals(trainType) || "Breisgau-S-Bahn Gmbh".equals(trainName)) && trainNum != null)
                 return new Line(id, network, Product.REGIONAL_TRAIN, "BSB" + trainNum);
