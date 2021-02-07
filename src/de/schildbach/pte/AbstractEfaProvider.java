@@ -1419,13 +1419,13 @@ public abstract class AbstractEfaProvider extends AbstractNetworkProvider {
             if ("Schulbus".equals(trainName) && symbol != null)
                 return new Line(id, network, Product.BUS, symbol);
         } else if ("13".equals(mot)) {
-            if ("Ersatzverkehr".equals(trainName) && trainType == null)
+            if (("SEV".equals(trainName) || "Ersatzverkehr".equals(trainName)) && trainType == null)
                 return new Line(id, network, Product.BUS, "SEV");
-            if (trainType == null && trainNum != null)
-                return new Line(id, network, Product.REGIONAL_TRAIN, trainNum);
+            if (trainNum != null)
+                return new Line(id, network, Product.REGIONAL_TRAIN, Strings.nullToEmpty(trainType) + trainNum);
         } else if ("14".equals(mot) || "15".equals(mot) || "16".equals(mot)) {
-            if (trainType != null && trainNum != null)
-                return new Line(id, network, Product.HIGH_SPEED_TRAIN, trainType + trainNum);
+            if (trainType != null || trainNum != null)
+                return new Line(id, network, Product.HIGH_SPEED_TRAIN, Strings.nullToEmpty(trainType) + Strings.nullToEmpty(trainNum));
         } else if ("17".equals(mot)) {
             if (trainNum == null && trainName != null && trainName.startsWith("Schienenersatz"))
                 return new Line(id, network, Product.BUS, "SEV");
