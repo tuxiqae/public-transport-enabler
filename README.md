@@ -25,7 +25,7 @@ If you prefer to run tests from the command line, you can comment out the test e
 [build.gradle](https://github.com/schildbach/public-transport-enabler/blob/master/build.gradle#L30)
 and use this command to only execute a test for a single provider:
 
-    $ gradle -Dtest.single=ParisProviderLive test
+    $ ./gradlew test --tests 'ParisProvider*'
 
 This uses the `ParisProvider` as an example.
 Just replace it with the provider you want to test.
@@ -43,6 +43,10 @@ Just replace it with the provider you want to test.
   * `NetworkId.NEWYORK`
   * [NewyorkProvider.java](src/de/schildbach/pte/NewyorkProvider.java)
   * [NewyorkProviderLiveTest.java](test/de/schildbach/pte/live/NewyorkProviderLiveTest.java)
+* [Washington DC, United States](https://github.com/schildbach/public-transport-enabler/pull/367)
+  * `NetworkId.WASHINGTONDC`
+  * [WashingtonDCProvider.java](src/de/schildbach/pte/WashingtonDCProvider.java)
+  * [WashingtonDCProviderLiveTest.java](test/de/schildbach/pte/live/WashingtonDCProviderLiveTest.java)
 * `NetworkId.BRFLORIPA`
   * [BrFloripaProvider.java](src/de/schildbach/pte/BrFloripaProvider.java)
   * [BrFloripaProviderLiveTest.java](test/de/schildbach/pte/live/BrFloripaProviderLiveTest.java)
